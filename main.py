@@ -11,7 +11,7 @@ def path(relative_path):
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.dirname(__file__)
-    return os.path.join(base_path, relative_path)
+    return os.path.join(base_path, "resource/"+relative_path)
 
 # Import data
 data=list(csv.reader(open(path("pdf.csv"))))
@@ -75,9 +75,10 @@ def set_infobar():
     dis="AlignE: "+str(cur_error_angle.get())+" / "
     dis=dis+"PixelE: "+str(cur_error_pixel.get())+" / "
     dis=dis+"Coord: "+cur_cinp.get()+" / "
-    dis=dis+"Ver: "+game_version.get()
+    dis=dis+game_version.get()+" / "
+    dis=dis+"~"+str(cur_within.get())
     option_info.config(text=dis)
-option_info=tk.Label(win,text="AlignE: 0.3 / PixelE: 0.1 / Coord: Copy+Paste / Ver: 1.18.30+",font=ft_small,fg="#888888")
+option_info=tk.Label(win,text="AlignE: 0.3 / PixelE: 0.1 / Coord: Copy+Paste / 1.18.30+ / ~4000",font=ft_small,fg="#888888")
 option_info.place(x=0,y=278)
 
 # Menu bar
@@ -90,7 +91,7 @@ menubar.add_cascade(label="About",menu=about)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.0 (2025.06.17)")
+about.add_cascade(label="Version 2.1 (2025.09.13)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -130,7 +131,7 @@ def set_mode():
     z2_inp.place_forget()
     facing_dir.place_forget()
     pixel_inp.place_forget()
-    if cur_cinp.get()=="Copy+Paste":
+    if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
         c1_but.place(x=200,y=5)
         c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
         if cur_input_mode.get()=="Coord+Coord":
@@ -183,6 +184,7 @@ cur_cinp.set("Copy+Paste")
 cinpmenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Coordinate Input",menu=cinpmenu)
 cinpmenu.add_radiobutton(label="Copy+Paste",value="Copy+Paste",variable=cur_cinp,command=set_mode)
+cinpmenu.add_radiobutton(label="Copy+Paste (Corner)",value="Copy+Paste (Corner)",variable=cur_cinp,command=set_mode)
 cinpmenu.add_radiobutton(label="Show Coordinate",value="Show Coordinate",variable=cur_cinp,command=set_mode)
 cinpmenu.add_radiobutton(label="Count Block Pixels",value="Block Pixel",variable=cur_cinp,command=set_mode)
 cinpmenu.add_radiobutton(label="Count Monitor Pixels",value="Monitor Pixel",variable=cur_cinp,command=set_mode)
@@ -193,7 +195,7 @@ cur_pc=tk.IntVar()
 cur_pc.set(12)
 pcmenu=tk.Menu(options,tearoff=False)
 options.add_separator()
-options.add_cascade(label="Display Probability",menu=pcmenu)
+options.add_cascade(label="Probability Within",menu=pcmenu)
 def set_pc(inp):
     if inp==0:
         pc_lab.config(text="")
@@ -213,34 +215,39 @@ def set_dismean():
 dismeanmenu.add_radiobutton(label="Show",value="Show",variable=cur_dismean,command=set_dismean)
 dismeanmenu.add_radiobutton(label="Hide",value="Hide",variable=cur_dismean,command=set_dismean)
 
-# Game version
-def set_version(ver):
+# Load data
+def set_version():
     global chunk_x,chunk_z,prob,cand_x,cand_z,stair_x,stair_z,net_x,net_z,lencand, prob_init
-    if ver==0:
+    if game_version.get()=="1.18.30+":
         print("1.18.30+")
         data=list(csv.reader(open(path("pre_prob.csv"))))
     else:
         print("Pre 1.18.30")
         data=list(csv.reader(open(path("pre_prob16.csv"))))
-    chunk_x=[int(data[i][0]) for i in range(len(data))]
-    chunk_z=[int(data[i][1]) for i in range(len(data))]
-    prob_init=[float(data[i][2]) for i in range(len(data))]
-    cand_x=[chunk_x[i]*16+2 for i in range(len(data))]
-    cand_z=[chunk_z[i]*16+2 for i in range(len(data))]
-    stair_x=[chunk_x[i]*16+4 for i in range(len(data))]
-    stair_z=[chunk_z[i]*16+4 for i in range(len(data))]
-    net_x=[chunk_x[i]*2 for i in range(len(data))]
-    net_z=[chunk_z[i]*2 for i in range(len(data))]
-    lencand=len(data)
+    distance=[16*((int(data[i][0]))**2+(int(data[i][1]))**2)**0.5 for i in range(len(data))]
+    ind=[i for i in range(len(distance)) if distance[i]<=cur_within.get()]
+    chunk_x=[int(data[i][0]) for i in ind]
+    chunk_z=[int(data[i][1]) for i in ind]
+    prob_init=[float(data[i][2]) for i in ind]
+    lencand=len(chunk_x)
+    cand_x=[chunk_x[i]*16+2 for i in range(lencand)]
+    cand_z=[chunk_z[i]*16+2 for i in range(lencand)]
+    stair_x=[chunk_x[i]*16+4 for i in range(lencand)]
+    stair_z=[chunk_z[i]*16+4 for i in range(lencand)]
+    net_x=[chunk_x[i]*2 for i in range(lencand)]
+    net_z=[chunk_z[i]*2 for i in range(lencand)]
+    print(lencand)
     update()
     set_infobar()
+    
+# Game version
 game_version=tk.StringVar()
 game_version.set("1.18.30+")
 gameversionmenu=tk.Menu(options,tearoff=False)
 options.add_separator()
 options.add_cascade(label="Game Version",menu=gameversionmenu)
-gameversionmenu.add_radiobutton(label="1.18.30+",value="1.18.30+",variable=game_version,command=partial(set_version,0))
-gameversionmenu.add_radiobutton(label="Pre 1.18.30",value="Pre 1.18.30",variable=game_version,command=partial(set_version,1))
+gameversionmenu.add_radiobutton(label="1.18.30+",value="1.18.30+",variable=game_version,command=set_version)
+gameversionmenu.add_radiobutton(label="Pre 1.18.30",value="Pre 1.18.30",variable=game_version,command=set_version)
 
 cur_prior=tk.StringVar()
 cur_prior.set("Simulation")
@@ -250,6 +257,15 @@ def set_prior():
     update()
 priormenu.add_radiobutton(label="Based on Simulation",value="Simulation",variable=cur_prior,command=set_prior)
 priormenu.add_radiobutton(label="Uniform Probability",value="Uniform",variable=cur_prior,command=set_prior)
+
+# Stronghold within
+cur_within=tk.IntVar()
+cur_within.set(4000)
+withinmenu=tk.Menu(options,tearoff=False)
+options.add_cascade(label="Stronghold Within",menu=withinmenu)
+withinmenu.add_radiobutton(label="2000",value=2000,variable=cur_within,command=set_version)
+withinmenu.add_radiobutton(label="3000",value=3000,variable=cur_within,command=set_version)
+withinmenu.add_radiobutton(label="4000",value=4000,variable=cur_within,command=set_version)
 
 # Add coordinate
 x1,z1,x2,z2=0,0,0,0
@@ -261,7 +277,7 @@ def set_c1():
         inp=inp.split(" ")
         x1=float(inp[0])
         z1=float(inp[2])
-        if cur_input_mode.get()=="Corner+Facing":
+        if cur_input_mode.get()=="Corner+Facing" or cur_cinp.get()=="Copy+Paste (Corner)":
             if round(x1%1,1) not in [0.3,0.7] or round(z1%1,1) not in [0.3,0.7]:
                 x1,z1=0,0
     except:
@@ -310,7 +326,15 @@ def add_point():
         except:
             x1,z1=0,0
     if cur_input_mode.get()=="Coord+Coord":
-        if (x1,z1)!=(x2,z2):
+        valid=True
+        if cur_cinp.get()=="Copy+Paste (Corner)":
+            mod1=round(x1%1,2)
+            mod2=round(z1%1,2)
+            if (mod1==0.3 or mod1==0.7) and (mod2==0.3 or mod2==0.7):
+                valid=True
+            else:
+                valid=False
+        if (x1,z1)!=(x2,z2) and valid:
             pt.insert(0,[x1,z1,x2,z2])
             pt_mode.insert(0,cur_input_mode.get())
             pt_err.insert(0,cur_error_angle.get())
@@ -318,7 +342,7 @@ def add_point():
             pt_coord.insert(0,cur_cinp.get())
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
-            if cur_cinp.get()=="Copy+Paste":
+            if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
                 c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
                 c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
             else:
@@ -381,7 +405,7 @@ def add_point():
                 pt_coord.insert(0,cur_cinp.get())
                 pt_prec.insert(0,cur_error_pixel.get())
                 x1,x2,z1,z2=0,0,0,0
-                if cur_cinp.get()=="Copy+Paste":
+                if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
                     c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
                 else:
                     x1_inp.delete(0,tk.END)
@@ -525,15 +549,17 @@ def update():
         if pt_mode[iteration]=="Corner+Facing":
             error_precision=math.atan(pt_prec[iteration]/16/0.3)
         elif pt_coord[iteration]=="Copy+Paste":
-            error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.2
+            error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.25
+        elif pt_coord[iteration]=="Copy+Paste (Corner)":
+            error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.177
         elif pt_coord[iteration]=="Show Coordinate":
-            error_precision=math.atan(1*math.sqrt(2)/dist)*0.2
+            error_precision=math.atan(1*math.sqrt(2)/dist)*0.25
         elif pt_coord[iteration]=="Block Pixel":
-            error_precision=math.atan(1/16*math.sqrt(2)/dist)*0.2
+            error_precision=math.atan(1/16*math.sqrt(2)/dist)*0.25
         else:
             error_precision=math.atan(1/16/72*math.sqrt(2)/dist)*0.2
         error_combine=(error_angle**2+error_precision**2)**0.5
-        print(error_combine)
+        print([error_angle,error_precision,error_combine])
         
         a=x1+0.5
         b=z1+0.5
@@ -631,10 +657,13 @@ def update():
         labels[8][0].config(text="("+str(mean_x)+","+str(mean_z)+")")
         labels[8][1].config(text="("+str(mean_net_x)+","+str(mean_net_z)+")")
         labels[8][2].config(text="Mean")
-        
-        p2=sum(prob[l] for l in range(len(cand_x)) if (mean_x-cand_x[j])**2+(mean_z-cand_z[j])**2<pc2)
-        col_code=(math.floor(255*p2),0,0)
-        labels[8][3].config(text=disprob2(p2),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
+
+        if cur_pc_value>0:
+            p2=sum(prob[l] for l in range(len(cand_x)) if (mean_x-cand_x[j])**2+(mean_z-cand_z[j])**2<pc2)
+            col_code=(math.floor(255*p2),0,0)
+            labels[8][3].config(text=disprob2(p2),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
+        else:
+            labels[i][3].config(text="")
 
 # Result
 tk.Label(win,text="OVERWORLD").place(x=160,y=83,anchor=tk.CENTER)
