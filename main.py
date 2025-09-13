@@ -281,7 +281,7 @@ def set_c1():
             if round(x1%1,1) not in [0.3,0.7] or round(z1%1,1) not in [0.3,0.7]:
                 x1,z1=0,0
     except:
-        pass
+        x1,z1=0,0
     c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
 
 def set_c2():
@@ -292,7 +292,7 @@ def set_c2():
         x2=float(inp[0])
         z2=float(inp[2])
     except:
-        pass
+        x2,z2=0,0
     c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
 
 def add_point():
