@@ -2,8 +2,9 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as font
-import pyperclip, math, csv, os, webbrowser
+import pyperclip, math, csv, os, webbrowser, heapq
 from functools import partial
+from bindglobal import BindGlobal as BG
 
 # Pyinstaller setting
 def path(relative_path):
@@ -29,11 +30,20 @@ net_x=[chunk_x[i]*2 for i in range(len(data))]
 net_z=[chunk_z[i]*2 for i in range(len(data))]
 lencand=len(data)
 
+# Import setting
+if "StroCate_setting.csv" in os.listdir():
+    default=list(csv.reader(open("StroCate_setting.csv")))[0]
+else:
+    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","4000"]
+
 pt=[]
 pt_mode=[]
 pt_prec=[]
 pt_err=[]
 pt_coord=[]
+pt_pixel=[]
+pt_pixel_err=[]
+pt_imode=[]
 
 # Functions
 def PDF(x):
@@ -61,7 +71,11 @@ def rgb_to_hex(r, g, b):
 # Window
 win=tk.Tk()
 win.title("/StroCate: Bedrock Stronghold Calculator")
-win.geometry("400x320+0+100")
+sw=win.winfo_screenwidth()
+sh=win.winfo_screenheight()
+move_x=sw-420
+move_y=sh-340
+win.geometry("400x320+"+str(move_x)+"+30")
 win.resizable(False,False)
 win.attributes("-topmost",True)
 win.iconbitmap(path("icon.ico"))
@@ -70,15 +84,19 @@ ft2=font.Font(family="Malgun Gothic",size=10,underline=True)
 ft_small=font.Font(family="Malgun Gothic",size=8)
 win.option_add("*Font",ft)
 
+# Angle measurement setup
+exec(open(path("mouse_track.py")).read())
+
 # Info bar
 def set_infobar():
-    dis="AlignE: "+str(cur_error_angle.get())+" / "
-    dis=dis+"PixelE: "+str(cur_error_pixel.get())+" / "
-    dis=dis+"Coord: "+cur_cinp.get()+" / "
+    dis="Align: "+str(cur_error_angle.get())+" / "
+    dis=dis+"Pixel: "+str(cur_error_pixel.get())+" / "
+    dis=dis+"PixPer: "+str(cur_pixel_perfect.get())+" / "
+    dis=dis+cur_cinp.get()+" / "
     dis=dis+game_version.get()+" / "
     dis=dis+"~"+str(cur_within.get())
     option_info.config(text=dis)
-option_info=tk.Label(win,text="AlignE: 0.3 / PixelE: 0.1 / Coord: Copy+Paste / 1.18.30+ / ~4000",font=ft_small,fg="#888888")
+option_info=tk.Label(win,text="Align: 0.3 / Pixel: 0.1 / PixPer: 0.1 / Copy+Paste / 1.18.30+ / ~4000",font=ft_small,fg="#888888")
 option_info.place(x=0,y=278)
 
 # Menu bar
@@ -91,7 +109,7 @@ menubar.add_cascade(label="About",menu=about)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.1 (2025.09.13)")
+about.add_cascade(label="Version 2.2 (2025.9.22.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -100,11 +118,20 @@ def open_youtube():
 about.add_cascade(label="Open Github",command=open_github)
 about.add_cascade(label="Open Youtube",command=open_youtube)
 
+about.add_separator()
+hotkeylist=tk.Menu(options,tearoff=False)
+about.add_cascade(label="Hotkeys",menu=hotkeylist)
+hotkeylist.add_cascade(label="[ : Paste coord 1")
+hotkeylist.add_cascade(label="] : Paste coord 2")
+hotkeylist.add_cascade(label="= : Add data")
+hotkeylist.add_cascade(label="F9 : Start mouse tracking")
+hotkeylist.add_cascade(label="F10 : End mouse tracking")
+
 # Error options
 ## Align
-acc_list=[0.03,0.05,0.075,0.1,0.2,0.3,0.4,0.5,0.75,1,1.5,2,4]
+acc_list=[0.03,0.05,0.075,0.1,0.2,0.3,0.4,0.5,0.75,1.0,1.5,2.0,4.0]
 cur_error_angle=tk.DoubleVar()
-cur_error_angle.set(0.3)
+cur_error_angle.set(float(default[0]))
 alignerrormenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Eye Align Error",menu=alignerrormenu)
 for i in range(len(acc_list)):
@@ -113,11 +140,20 @@ for i in range(len(acc_list)):
 ## Pixel
 pixel_list=[0.01,0.03,0.05,0.075,0.1,0.15,0.2,0.3]
 cur_error_pixel=tk.DoubleVar()
-cur_error_pixel.set(0.1)
+cur_error_pixel.set(float(default[1]))
 pixelerrormenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Pixel Count Error",menu=pixelerrormenu)
 for i in range(len(pixel_list)):
     pixelerrormenu.add_radiobutton(label=pixel_list[i],variable=cur_error_pixel,value=pixel_list[i],command=set_infobar)
+
+## Pixel Perfect
+pixel_perfect_list=[0.03,0.06,0.1,0.2,0.3]
+cur_pixel_perfect=tk.DoubleVar()
+cur_pixel_perfect.set(float(default[2]))
+pixelperfectmenu=tk.Menu(options,tearoff=False)
+options.add_cascade(label="Pixel Perfect Error",menu=pixelperfectmenu)
+for i in range(len(pixel_perfect_list)):
+    pixelperfectmenu.add_radiobutton(label=pixel_perfect_list[i],variable=cur_pixel_perfect,value=pixel_perfect_list[i],command=set_infobar)
 
 # Input options
 ## Mode
@@ -131,10 +167,12 @@ def set_mode():
     z2_inp.place_forget()
     facing_dir.place_forget()
     pixel_inp.place_forget()
+    pixel_dis.place_forget()
+    pixel_inp.place_forget()
     if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
         c1_but.place(x=200,y=5)
         c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
-        if cur_input_mode.get()=="Coord+Coord":
+        if cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
             x2,z2=0,0
             c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
             c2_but.place(x=200,y=35)
@@ -157,7 +195,7 @@ def set_mode():
         z1_inp.place(x=160,y=8)
         x1,x2,z1,z2=0,0,0,0
         c1_dis.config(text="Coord 1:")
-        if cur_input_mode.get()=="Coord+Coord":
+        if cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
             c2_dis.config(text="Coord 2:")
             x2_inp.place(x=80,y=38)
             z2_inp.place(x=160,y=38)
@@ -168,19 +206,24 @@ def set_mode():
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"Pixel")
             pixel_inp.place(x=175,y=38)
+    if cur_input_mode.get()=="Pixel Perfect":
+        pixel_dis.place(x=342,y=9)
+        pixel_inp.place(x=330,y=30)
+        pixel_inp.delete(0,tk.END)
     set_infobar()
 
 cur_input_mode=tk.StringVar()
-cur_input_mode.set("Coord+Coord")
+cur_input_mode.set(default[3])
 inputmodemenu=tk.Menu(options,tearoff=False)
 options.add_separator()
 options.add_cascade(label="Input Mode",menu=inputmodemenu)
 inputmodemenu.add_radiobutton(label="Coord+Coord",value="Coord+Coord",variable=cur_input_mode,command=set_mode)
 inputmodemenu.add_radiobutton(label="Corner+Facing",value="Corner+Facing",variable=cur_input_mode,command=set_mode)
+inputmodemenu.add_radiobutton(label="Pixel Perfect",value="Pixel Perfect",variable=cur_input_mode,command=set_mode)
 
 ## Coordinate
 cur_cinp=tk.StringVar()
-cur_cinp.set("Copy+Paste")
+cur_cinp.set(default[4])
 cinpmenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Coordinate Input",menu=cinpmenu)
 cinpmenu.add_radiobutton(label="Copy+Paste",value="Copy+Paste",variable=cur_cinp,command=set_mode)
@@ -190,35 +233,40 @@ cinpmenu.add_radiobutton(label="Count Block Pixels",value="Block Pixel",variable
 cinpmenu.add_radiobutton(label="Count Monitor Pixels",value="Monitor Pixel",variable=cur_cinp,command=set_mode)
 
 # Display options
-pc_list=[0,6,8,10,12,14,16,18,20]
+pc_list=[-1,0,6,8,10,12,14,16,18,20]
 cur_pc=tk.IntVar()
-cur_pc.set(12)
+cur_pc.set(int(default[5]))
 pcmenu=tk.Menu(options,tearoff=False)
 options.add_separator()
 options.add_cascade(label="Probability Within",menu=pcmenu)
 def set_pc(inp):
-    if inp==0:
+    if inp<1:
         pc_lab.config(text="")
     else:
         pc_lab.config(text="≤"+str(inp)+"C")
-    update()
+    if inp<0:
+        PROB_Label.config(text="PROB(Grid)")
+    else:
+        PROB_Label.config(text="PROB")
+    display()
+pcmenu.add_radiobutton(label="Village Grid",value=-1,variable=cur_pc,command=partial(set_pc,-1))
 pcmenu.add_radiobutton(label="Off",value=0,variable=cur_pc,command=partial(set_pc,0))
-for i in range(1,len(pc_list)):
+for i in range(2,len(pc_list)):
     pcmenu.add_radiobutton(label=str(pc_list[i])+" Chunks",value=pc_list[i],variable=cur_pc,command=partial(set_pc,pc_list[i]))
 
 cur_dismean=tk.StringVar()
-cur_dismean.set("Hide")
+cur_dismean.set(default[6])
 dismeanmenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Display Mean",menu=dismeanmenu)
 def set_dismean():
-    update()
+    display()
 dismeanmenu.add_radiobutton(label="Show",value="Show",variable=cur_dismean,command=set_dismean)
 dismeanmenu.add_radiobutton(label="Hide",value="Hide",variable=cur_dismean,command=set_dismean)
 
 # Load data
 def set_version():
     global chunk_x,chunk_z,prob,cand_x,cand_z,stair_x,stair_z,net_x,net_z,lencand, prob_init
-    if game_version.get()=="1.18.30+":
+    if game_version.get()!="Pre 1.18.30":
         print("1.18.30+")
         data=list(csv.reader(open(path("pre_prob.csv"))))
     else:
@@ -237,35 +285,45 @@ def set_version():
     net_x=[chunk_x[i]*2 for i in range(lencand)]
     net_z=[chunk_z[i]*2 for i in range(lencand)]
     print(lencand)
-    update()
+    load_prob()
+    for i in range(len(pt)):
+        add_prob(i)
+    display()
     set_infobar()
     
 # Game version
 game_version=tk.StringVar()
-game_version.set("1.18.30+")
+game_version.set(default[7])
 gameversionmenu=tk.Menu(options,tearoff=False)
 options.add_separator()
 options.add_cascade(label="Game Version",menu=gameversionmenu)
+gameversionmenu.add_radiobutton(label="1.21.100+",value="1.21.100+",variable=game_version,command=set_version)
 gameversionmenu.add_radiobutton(label="1.18.30+",value="1.18.30+",variable=game_version,command=set_version)
 gameversionmenu.add_radiobutton(label="Pre 1.18.30",value="Pre 1.18.30",variable=game_version,command=set_version)
 
 cur_prior=tk.StringVar()
-cur_prior.set("Simulation")
+cur_prior.set(default[8])
 priormenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Prior Probability",menu=priormenu)
 def set_prior():
-    update()
+    load_prob()
+    for i in range(len(pt)):
+        add_prob(i)
+    display()
 priormenu.add_radiobutton(label="Based on Simulation",value="Simulation",variable=cur_prior,command=set_prior)
 priormenu.add_radiobutton(label="Uniform Probability",value="Uniform",variable=cur_prior,command=set_prior)
 
 # Stronghold within
 cur_within=tk.IntVar()
-cur_within.set(4000)
+cur_within.set(int(default[9]))
 withinmenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Stronghold Within",menu=withinmenu)
 withinmenu.add_radiobutton(label="2000",value=2000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="3000",value=3000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="4000",value=4000,variable=cur_within,command=set_version)
+
+# Initialize infobar
+set_infobar()
 
 # Add coordinate
 x1,z1,x2,z2=0,0,0,0
@@ -296,8 +354,8 @@ def set_c2():
     c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
 
 def add_point():
-    global pt, x1, x2, z1, z2, pt_mode, pt_prec, pt_err, pt_coord
-    if cur_cinp.get()=="Show Coordinate" and cur_input_mode.get()=="Coord+Coord":
+    global pt, x1, x2, z1, z2, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_imode
+    if cur_cinp.get()=="Show Coordinate" and cur_input_mode.get()!="Corner+Facing":
         try:
             x1=int(x1_inp.get())+0.5
             x2=int(x2_inp.get())+0.5
@@ -311,7 +369,7 @@ def add_point():
             z1=float(z1_inp.get())
         except:
             x1,z1=0,0
-    elif (cur_cinp.get()=="Block Pixel" or cur_cinp.get()=="Monitor Pixel") and cur_input_mode.get()=="Coord+Coord":
+    elif (cur_cinp.get()=="Block Pixel" or cur_cinp.get()=="Monitor Pixel") and cur_input_mode.get()!="Corner+Facing":
         try:
             x1=float(x1_inp.get())
             x2=float(x2_inp.get())
@@ -340,6 +398,9 @@ def add_point():
             pt_err.insert(0,cur_error_angle.get())
             pt_prec.insert(0,0)
             pt_coord.insert(0,cur_cinp.get())
+            pt_pixel.insert(0,0)
+            pt_pixel_err.insert(0,0)
+            pt_imode.insert(0,cur_input_mode.get())
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
             if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
@@ -350,8 +411,9 @@ def add_point():
                 x2_inp.delete(0,tk.END)
                 z1_inp.delete(0,tk.END)
                 z2_inp.delete(0,tk.END)
-            update()
-    else:
+            add_prob(0)
+            display()
+    elif cur_input_mode.get()=="Corner+Facing":
         mod1=round(x1%1,2)
         mod2=round(z1%1,2)
         facing=facing_dir.get()
@@ -404,6 +466,9 @@ def add_point():
                 pixel_inp.insert(0,"Pixel")
                 pt_coord.insert(0,cur_cinp.get())
                 pt_prec.insert(0,cur_error_pixel.get())
+                pt_pixel.insert(0,0)
+                pt_pixel_err.insert(0,0)
+                pt_imode.insert(0,cur_input_mode.get())
                 x1,x2,z1,z2=0,0,0,0
                 if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
                     c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
@@ -412,10 +477,48 @@ def add_point():
                     x2_inp.delete(0,tk.END)
                     z1_inp.delete(0,tk.END)
                     z2_inp.delete(0,tk.END)
-                update()
+                add_prob(0)
+                display()
+    else:
+        valid=True
+        if cur_cinp.get()=="Copy+Paste (Corner)":
+            mod1=round(x1%1,2)
+            mod2=round(z1%1,2)
+            if (mod1==0.3 or mod1==0.7) and (mod2==0.3 or mod2==0.7):
+                valid=True
+            else:
+                valid=False
+        try:
+            npixel=float(pixel_inp.get())
+            if npixel<=0:
+                valid=False
+        except:
+            valid=False
+        if (x1,z1)!=(x2,z2) and valid:
+            pt.insert(0,[x1,z1,x2,z2])
+            pt_mode.insert(0,cur_input_mode.get())
+            pt_err.insert(0,cur_error_angle.get())
+            pt_prec.insert(0,0)
+            pt_coord.insert(0,cur_cinp.get())
+            pt_pixel.insert(0,npixel)
+            pt_pixel_err.insert(0,cur_pixel_perfect.get())
+            pt_imode.insert(0,cur_input_mode.get())
+            listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
+            x1,x2,z1,z2=0,0,0,0
+            pixel_inp.delete(0,tk.END)
+            if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
+                c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
+                c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
+            else:
+                x1_inp.delete(0,tk.END)
+                x2_inp.delete(0,tk.END)
+                z1_inp.delete(0,tk.END)
+                z2_inp.delete(0,tk.END)
+            add_prob(0)
+            display()
         
 def del_point():
-    global pt, pt_mode, pt_prec, pt_err, pt_coord
+    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err
     try:
         ind=listdata.curselection()[0]
         listdata.delete(ind)
@@ -424,55 +527,27 @@ def del_point():
         pt_mode.pop(ind)
         pt_err.pop(ind)
         pt_coord.pop(ind)
-        update()
-    except:
-        pass
-
-def error_plus():
-    global pt_err
-    try:
-        ind=listdata.curselection()[0]
-        acc_ind=acc_list.index(pt_err[ind])
-        if acc_ind<(len(acc_list)-1):
-            acc_ind=acc_ind+1
-            pt_err[ind]=acc_list[acc_ind]
-            listdata.delete(ind)
-            if pt_mode=="Coord+Coord":
-                listdata.insert(ind,str(pt_err[ind])+'/'+f'{pt[ind][0]:.0f}'+","+f'{pt[ind][1]:.0f}'+"/"+f'{pt[ind][2]:.0f}'+","+f'{pt[ind][3]:.0f}')
-            else:
-                listdata.insert(ind,str(pt_err[ind])+'/'+f'{pt[ind][0]:.0f}'+","+f'{pt[ind][1]:.0f}'+"/"+f'{pt[ind][2]-pt[ind][0]:.2f}'+"/"+f'{pt[ind][3]-pt[ind][1]:.2f}')
-            update()
-            listdata.select_set(ind)
-    except:
-        pass
-
-def error_minus():
-    global pt_err
-    try:
-        ind=listdata.curselection()[0]
-        acc_ind=acc_list.index(pt_err[ind])
-        if acc_ind>0:
-            acc_ind=acc_ind-1
-            pt_err[ind]=acc_list[acc_ind]
-            listdata.delete(ind)
-            if pt_mode=="Coord+Coord":
-                listdata.insert(ind,str(pt_err[ind])+'/'+f'{pt[ind][0]:.0f}'+","+f'{pt[ind][1]:.0f}'+"/"+f'{pt[ind][2]:.0f}'+","+f'{pt[ind][3]:.0f}')
-            else:
-                listdata.insert(ind,str(pt_err[ind])+'/'+f'{pt[ind][0]:.0f}'+","+f'{pt[ind][1]:.0f}'+"/"+f'{pt[ind][2]-pt[ind][0]:.2f}'+"/"+f'{pt[ind][3]-pt[ind][1]:.2f}')
-            update()
-            listdata.select_set(ind)
+        pt_pixel.pop(ind)
+        pt_pixel_err.pop(ind)
+        load_prob()
+        for i in range(len(pt)):
+            add_prob[i]
+        display()
     except:
         pass
 
 def clear():
-    global pt, pt_mode, pt_prec, pt_err, pt_coord
+    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err
     pt=[]
     pt_mode=[]
     pt_prec=[]
     pt_err=[]
     pt_coord=[]
+    pt_pixel=[]
+    pt_pixel_err=[]
     listdata.delete(0,tk.END)
-    update()
+    load_prob()
+    display()
 
 def clear_inp(event):
     pixel_inp.delete(0,tk.END)
@@ -491,6 +566,49 @@ pixel_inp.insert(0,"Pixels")
 pixel_inp.bind("<Button-1>",clear_inp)
 c2_but=tk.Button(win,text="PASTE",command=set_c2,padx=5,pady=1)
 c2_but.place(x=200,y=35)
+pixel_dis=tk.Label(win,text="Pixel")
+
+def key_press1(event):
+    set_c1()
+bg=BG()
+bg.start()
+bg.gbind("<[>",key_press1)
+
+def key_press2(event):
+    set_c2()
+bg2=BG()
+bg2.start()
+bg2.gbind("<]>",key_press2)
+
+def key_press3(event):
+    add_point()
+bg3=BG()
+bg3.start()
+bg3.gbind("<=>",key_press3)
+
+def start_track():
+    global sum_move
+    print("START TRACKING")
+    rid = RAWINPUTDEVICE(HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE, RIDEV_INPUTSINK, hwnd)
+    RegisterRawInputDevices(ct.byref(rid), 1, ct.sizeof(rid))
+    sum_move=0
+def key_press4(event):
+    start_track()
+bg4=BG()
+bg4.start()
+bg4.gbind("<F9>",key_press4)
+
+def stop_track():
+    global sum_move
+    print("STOP TRACKING")
+    rid = RAWINPUTDEVICE(HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE, RIDEV_REMOVE, None)
+    RegisterRawInputDevices(ct.byref(rid), 1, ct.sizeof(rid))
+    print(sum_move)
+def key_press5(event):
+    stop_track()
+bg5=BG()
+bg5.start()
+bg5.gbind("<F10>",key_press5)
 
 add_but=tk.Button(win,text="ADD",command=add_point,padx=8,pady=3)
 add_but.place(x=265,y=19)
@@ -500,6 +618,8 @@ x1_inp=tk.Entry(win,width=8)
 z1_inp=tk.Entry(win,width=8)
 x2_inp=tk.Entry(win,width=8)
 z2_inp=tk.Entry(win,width=8)
+pixel_inp=tk.Entry(win,width=8)
+set_mode()
 
 # Datas
 tk.Label(win,text="DATA").place(x=23,y=83,anchor=tk.CENTER)
@@ -510,10 +630,6 @@ del_but=tk.Button(win,text="DELETE",command=del_point,padx=2,pady=1)
 del_but.place(x=5,y=243)
 clear_but=tk.Button(win,text="CLEAR",command=clear,padx=2,pady=1)
 clear_but.place(x=63,y=243)
-pl_but=tk.Button(win,text="ER+",command=error_plus,padx=2,pady=1)
-# pl_but.place(x=42,y=304)
-mn_but=tk.Button(win,text="ER-",command=error_minus,padx=2,pady=1)
-# mn_but.place(x=81,y=304)
 
 # Visualization
 labels=[[] for i in range(9)]
@@ -532,52 +648,70 @@ for i in range(9):
     labels[i].append(R)
 
 # Calculate
-def update():
-    global prob, prob_dis
+def load_prob():
+    global prob
     if cur_prior.get()=="Simulation":
-        prob=prob_init.copy()
+        prob=[[prob_init[i],i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
     else:
-        prob=[1/lencand for i in range(len(cand_x))]
-    for iteration in range(len(pt)):
-        x1=pt[iteration][0]
-        z1=pt[iteration][1]
-        x2=pt[iteration][2]
-        z2=pt[iteration][3]
+        prob_common=1/lencand
+        prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
 
-        dist=((x1-x2)**2+(z1-z2)**2)**0.5
-        error_angle=math.atan(pt_err[iteration]/12/16)
-        if pt_mode[iteration]=="Corner+Facing":
-            error_precision=math.atan(pt_prec[iteration]/16/0.3)
-        elif pt_coord[iteration]=="Copy+Paste":
-            error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.25
-        elif pt_coord[iteration]=="Copy+Paste (Corner)":
-            error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.177
-        elif pt_coord[iteration]=="Show Coordinate":
-            error_precision=math.atan(1*math.sqrt(2)/dist)*0.25
-        elif pt_coord[iteration]=="Block Pixel":
-            error_precision=math.atan(1/16*math.sqrt(2)/dist)*0.25
-        else:
-            error_precision=math.atan(1/16/72*math.sqrt(2)/dist)*0.2
-        error_combine=(error_angle**2+error_precision**2)**0.5
-        print([error_angle,error_precision,error_combine])
-        
+def add_prob(n):
+    global prob
+    x1=pt[n][0]
+    z1=pt[n][1]
+    x2=pt[n][2]
+    z2=pt[n][3]
+
+    dist=((x1-x2)**2+(z1-z2)**2)**0.5
+    if game_version.get()=="1.21.100+":
+        error_angle=math.atan(max(0.06,pt_err[n])/12/16)
+    else:
+        error_angle=math.atan(pt_err[n]/12/16)
+    if pt_imode[n]=="Pixel Perfect":
+        error_angle=error_angle+0.01
+    if pt_mode[n]=="Corner+Facing":
+        error_precision=math.atan(pt_prec[n]/16/0.3)
+        error_dist=0
+    elif pt_coord[n]=="Copy+Paste":
+        error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.25
+        error_dist=0.3/100
+    elif pt_coord[n]=="Copy+Paste (Corner)":
+        error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.177
+        error_dist=0.3/100
+    elif pt_coord[n]=="Show Coordinate":
+        error_precision=math.atan(1*math.sqrt(2)/dist)*0.25
+        error_dist=0.3
+    elif pt_coord[n]=="Block Pixel":
+        error_precision=math.atan(1/16*math.sqrt(2)/dist)*0.25
+        error_dist=0.3/16
+    else:
+        error_precision=math.atan(1/16/72*math.sqrt(2)/dist)*0.2
+        error_dist=0.3/1152
+    error_combine=(error_angle**2+error_precision**2)**0.5
+    print([error_angle,error_precision,error_combine])
+
+    if pt_imode[n]!="Pixel Perfect":
+        # Line
         a=x1+0.5
         b=z1+0.5
         if x1==x2:
-            p=1e100
-            q=x1
+            xeye1=x1
+            xeye2=x1
+            zeye1=z1+143.75**0.5
+            zeye2=z1-143.75**0.5
         else:
             p=(z2-z1)/(x2-x1)
             q=z1-p*x1
-        r=12
+            r=12
 
-        denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r
-        denom2=a+b*p-p*q
-        nom=p*p+1
-        xeye1=(denom1**0.5+denom2)/nom
-        xeye2=(-1*denom1**0.5+denom2)/nom
-        zeye1=p*xeye1+q
-        zeye2=p*xeye2+q
+            denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r
+            denom2=a+b*p-p*q
+            nom=p*p+1
+            xeye1=(denom1**0.5+denom2)/nom
+            xeye2=(-1*denom1**0.5+denom2)/nom
+            zeye1=p*xeye1+q
+            zeye2=p*xeye2+q
 
         dir_vec=(x2-x1,z2-z1)
         vec1=(xeye1-a,zeye1-b)
@@ -592,43 +726,192 @@ def update():
             zeye=zeye2
 
         angle=cal_angle(a,xeye,b,zeye)
-        cand_angle=[cal_angle(a,cand_x[i],b,cand_z[i]) for i in range(len(cand_x))]
-        angle_dif=[min(abs(cand_angle[i]-angle),abs(cand_angle[i]-angle+2*math.pi),abs(cand_angle[i]-angle-2*math.pi)) for i in range(len(cand_x))]
-        prob_mult=[PDF(angle_dif[i]/(error_precision+error_angle)) for i in range(len(cand_x))]
-        prob=[prob[i]*prob_mult[i] for i in range(len(cand_x))]
-        sumprob=sum(prob)
+        cand_angle=[cal_angle(a,prob[i][2],b,prob[i][3]) for i in range(len(prob))]
+        angle_dif=[min(abs(cand_angle[i]-angle),abs(cand_angle[i]-angle+2*math.pi),abs(cand_angle[i]-angle-2*math.pi)) for i in range(len(prob))]
+        new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine) for i in range(len(prob))]
+        prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
+        sumprob=sum(prob[i][0] for i in range(len(prob)))
         if sumprob>0:
-            prob=[prob[i]/sumprob for i in range(len(cand_x))]
+            for i in range(len(prob)):
+                prob[i][0]=prob[i][0]/sumprob
         else:
-            prob=[1/lencand for i in range(len(cand_x))]
+            prob_common=1/lencand
+            prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
+    else:
+        # Pixel Perfect
+        if game_version.get()=="1.21.100+":
+            shift=0.196
+        else:
+            shift=0.4032
+        print(shift)
+        vector=[x2-x1,z2-z1]
+        new_x1=x1+vector[0]*shift/dist
+        new_z1=z1+vector[1]*shift/dist
 
-    prob_dis=sorted([[prob[i],i] for i in range(len(cand_x))],reverse=True)
-    rec_x=round(sum(stair_x[i]*prob[i] for i in range(len(cand_x))))
-    rec_z=round(sum(stair_z[i]*prob[i] for i in range(len(cand_x))))
-    dist=[(rec_x-stair_x[j])**2+(rec_z-stair_z[j])**2 for j in range(len(cand_x))]
-    rec_net_x=rec_x//8
-    rec_net_z=rec_z//8
+        a=x1+0.5
+        b=z1+0.5
+        if z1==z2:
+            xeye1=x1+143.75**0.5
+            xeye2=x1-143.75**0.5
+            zeye1=z1
+            zeye2=z1
+        else:
+            p=(x2-x1)/(z2-z1)*-1
+            q=new_z1-p*new_x1
+            r=12
 
+            denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r
+            denom2=a+b*p-p*q
+            nom=p*p+1
+            xeye1=(denom1**0.5+denom2)/nom
+            xeye2=(-1*denom1**0.5+denom2)/nom
+            zeye1=p*xeye1+q
+            zeye2=p*xeye2+q
+
+        dir_vec=[x2-x1,z2-z1]
+        dir_vec=[dir_vec[1],dir_vec[0]*-1]
+        vec1=(xeye1-a,zeye1-b)
+        vec2=(xeye2-a,zeye2-b)
+        cos1=dir_vec[0]*vec1[0]+dir_vec[1]*vec1[1]
+        cos2=dir_vec[0]*vec2[0]+dir_vec[1]*vec2[1]
+        if cos1>cos2:
+            xeye=xeye1
+            zeye=zeye1
+        else:
+            xeye=xeye2
+            zeye=zeye2
+
+        print([xeye,zeye])
+
+        angle=cal_angle(a,xeye,b,zeye)
+        print((a,xeye,b,zeye))
+        cand_angle=[cal_angle(a,prob[i][2],b,prob[i][3]) for i in range(len(prob))]
+        angle_dif=[min(abs(cand_angle[i]-angle),abs(cand_angle[i]-angle+2*math.pi),abs(cand_angle[i]-angle-2*math.pi)) for i in range(len(prob))]
+        new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine) for i in range(len(prob))]
+        prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
+        sumprob=sum(prob[i][0] for i in range(len(prob)))
+        if sumprob>0:
+            for i in range(len(prob)):
+                prob[i][0]=prob[i][0]/sumprob
+        else:
+            prob_common=1/lencand
+            prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
+
+        pf=pt_pixel[n]
+        if game_version.get()=="1.21.100+":
+            error_coef=pf/15.604
+        else:
+            error_coef=pf/47.739
+        error_measurement=pt_pixel_err[n]
+        error_dist2=pf*error_dist/dist
+        error_pf=(error_coef**2+error_measurement**2+error_dist2**2)**0.5
+        if game_version.get()=="1.21.100+":
+            k=dist*391.857
+        else:
+            k=dist*185.468
+        cand_pf=[k/((prob[i][2]-a)**2+(prob[i][3]-b)**2)**0.5 for i in range(len(prob))]
+        pf_dif=[abs(cand_pf[i]-pf) for i in range(len(prob))]
+        new_prob=[prob[i][0]*PDF(pf_dif[i]/error_pf) for i in range(len(prob))]
+        prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
+        sumprob=sum(prob[i][0] for i in range(len(prob)))
+        if sumprob>0:
+            for i in range(len(prob)):
+                prob[i][0]=prob[i][0]/sumprob
+        else:
+            prob_common=1/lencand
+            prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
+
+def display():
+    global prob, prob_dis
     cur_pc_value=cur_pc.get()
     pc2=(cur_pc_value*16)**2
 
-    if cur_dismean.get()=="Show":
-        ndis=8
+    # Village grid
+    if cur_pc_value==-1:
+        if game_version.get()!="Pre 1.18.30":
+            vil_grid=[]
+            vil_list=[]
+            vil_prob_list=[]
+            for i in range(-8,8):
+                for j in range(-8,8):
+                    vil_grid.append([i,j])
+                    vil_list.append([])
+                    vil_prob_list.append([])
+            for i in range(len(prob)):
+                k=prob[i][1]
+                if chunk_x[k]%34<28 and chunk_z[k]%34<28:
+                    xgrid=chunk_x[k]//34
+                    zgrid=chunk_z[k]//34
+                    grid_ind=(xgrid+8)*16+(zgrid+8)
+                    vil_list[grid_ind].append(k)
+                    vil_prob_list[grid_ind].append(prob[i][0])
+        else:
+            vil_grid=[]
+            vil_list=[]
+            vil_prob_list=[]
+            for i in range(-10,10):
+                for j in range(-10,10):
+                    vil_grid.append([i,j])
+                    vil_list.append([])
+                    vil_prob_list.append([])
+            for i in range(len(prob)):
+                k=prob[i][1]
+                if chunk_x[k]%27<18 and chunk_z[k]%27<18:
+                    xgrid=chunk_x[k]//27
+                    zgrid=chunk_z[k]//27
+                    grid_ind=(xgrid+10)*20+(zgrid+10)
+                    vil_list[grid_ind].append(k)
+                    vil_prob_list[grid_ind].append(prob[i][0])
+        prob_dis=[]
+        for i in range(len(vil_grid)):
+            grid_len=len(vil_prob_list[i])
+            if grid_len>0:
+                k=[]
+                grid_prob=sum(vil_prob_list[i])
+                k.append(grid_prob)
+                grid_x=round(sum(stair_x[vil_list[i][j]]*vil_prob_list[i][j] for j in range(grid_len))/grid_prob)
+                grid_z=round(sum(stair_z[vil_list[i][j]]*vil_prob_list[i][j] for j in range(grid_len))/grid_prob)
+                k=k+[grid_x,grid_z,grid_x//8,grid_z//8,vil_grid[i][0],vil_grid[i][1]]
+                prob_dis.append(k)
     else:
-        ndis=9
+        prob_dis=[]
+        for i in range(len(prob)):
+            k=prob[i][1]
+            prob_dis.append([prob[i][0],prob[i][1],stair_x[k],stair_z[k],net_x[k],net_z[k]])
+
+    # Sort
+    if cur_dismean.get()=="Show":
+        ndis=min(8,len(prob_dis))
+    else:
+        ndis=min(9,len(prob_dis))
+    prob_dis=heapq.nlargest(ndis,prob_dis)
 
     if cur_pc_value>0:
         prob2=[]
         for i in range(ndis):
             j=prob_dis[i][1]
-            p2=sum(prob[l] for l in range(len(cand_x)) if (cand_x[l]-cand_x[j])**2+(cand_z[l]-cand_z[j])**2<pc2)
+            p2=0
+            for l in range(len(prob)):
+                if (cand_x[j]-prob[l][2])**2+(cand_z[j]-prob[l][3])**2 < pc2:
+                    p2=p2+prob[l][0]
             prob2.append(p2)
+
+    # Display
+    for i in range(9):
+        for j in range(4):
+            labels[i][j].config(text="")
         
     for i in range(ndis):
-        j=prob_dis[i][1]
-        labels[i][0].config(text="("+str(stair_x[j])+","+str(stair_z[j])+")")
-        labels[i][1].config(text="("+str(net_x[j])+","+str(net_z[j])+")")
-        k=prob_dis[i][0]
+        if cur_pc_value==-1:
+            labels[i][0].config(text="("+str(prob_dis[i][1])+","+str(prob_dis[i][2])+")")
+            labels[i][1].config(text="("+str(prob_dis[i][3])+","+str(prob_dis[i][4])+")")
+            k=prob_dis[i][0]
+        else:
+            j=prob_dis[i][1]
+            labels[i][0].config(text="("+str(stair_x[j])+","+str(stair_z[j])+")")
+            labels[i][1].config(text="("+str(net_x[j])+","+str(net_z[j])+")")
+            k=prob_dis[i][0]
+            
         if k<0.05:
             k2=k*(1/0.05)
             col_code=(math.floor(k2*127),0,0)
@@ -649,9 +932,9 @@ def update():
         else:
             labels[i][3].config(text="")
 
-    if ndis==8:
-        mean_x=round(sum(cand_x[l]*prob[l] for l in range(len(cand_x))))
-        mean_z=round(sum(cand_z[l]*prob[l] for l in range(len(cand_x))))
+    if cur_dismean.get()=="Show":
+        mean_x=round(sum(prob_dis[l][2]*prob_dis[l][0] for l in range(len(prob_dis))))
+        mean_z=round(sum(prob_dis[l][3]*prob_dis[l][0] for l in range(len(prob_dis))))
         mean_net_x=mean_x//8
         mean_net_z=mean_z//8
         labels[8][0].config(text="("+str(mean_x)+","+str(mean_z)+")")
@@ -659,7 +942,11 @@ def update():
         labels[8][2].config(text="Mean")
 
         if cur_pc_value>0:
-            p2=sum(prob[l] for l in range(len(cand_x)) if (mean_x-cand_x[j])**2+(mean_z-cand_z[j])**2<pc2)
+            p2=0
+            for l in range(len(prob)):
+                k=prob[l][1]
+                if (cand_x[k]-mean_x)**2+(cand_z[l]-mean_z)**2 < pc2:
+                    p2=p2+prob[l][0]
             col_code=(math.floor(255*p2),0,0)
             labels[8][3].config(text=disprob2(p2),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
         else:
@@ -668,10 +955,43 @@ def update():
 # Result
 tk.Label(win,text="OVERWORLD").place(x=160,y=83,anchor=tk.CENTER)
 tk.Label(win,text="NETHER").place(x=240,y=83,anchor=tk.CENTER)
-tk.Label(win,text="PROB").place(x=308,y=83,anchor=tk.CENTER)
-pc_lab=tk.Label(win,text="<"+str(12)+"C")
+PROB_Label=tk.Label(win,text="PROB")
+PROB_Label.place(x=308,y=83,anchor=tk.CENTER)
+if cur_pc.get()<0:
+        PROB_Label.config(text="PROB(Grid)")
+else:
+    PROB_Label.config(text="PROB")
+        
+if cur_pc.get()>0:
+    pc_lab=tk.Label(win,text="<"+str(12)+"C")
+else:
+    pc_lab=tk.Label(win,text="")
 pc_lab.place(x=360,y=83,anchor=tk.CENTER)
-update()
+set_version()
+load_prob()
+display()
+
+# Close
+def close():
+    # Stop global binding
+    bg.stop()
+    bg2.stop()
+    bg3.stop()
+    bg4.stop()
+    bg5.stop()
+
+    # Save setting
+    new_default=[str(cur_error_angle.get()),str(cur_error_pixel.get()),str(cur_pixel_perfect.get())]
+    new_default=new_default+[cur_input_mode.get(),cur_cinp.get(),str(cur_pc.get()),cur_dismean.get()]
+    new_default=new_default+[game_version.get(),cur_prior.get(),str(cur_within.get())]
+    f=open("StroCate_setting.csv","w")
+    a=csv.writer(f)
+    a.writerow(new_default)
+    f.close()
+
+    # Close window
+    win.destroy()
+win.protocol("WM_DELETE_WINDOW",close)
 
 # Display
 win.config(menu=menubar)
