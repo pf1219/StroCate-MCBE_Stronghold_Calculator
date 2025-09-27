@@ -34,7 +34,11 @@ lencand=len(data)
 if "StroCate_setting.csv" in os.listdir():
     default=list(csv.reader(open("StroCate_setting.csv")))[0]
 else:
-    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","4000"]
+    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","4000",0,0,0]
+while len(default)<13:
+    default.append(0)
+for i in range(10,13):
+    default[i]=float(default[i])
 
 pt=[]
 pt_mode=[]
@@ -43,7 +47,6 @@ pt_err=[]
 pt_coord=[]
 pt_pixel=[]
 pt_pixel_err=[]
-pt_imode=[]
 
 # Functions
 def PDF(x):
@@ -65,6 +68,12 @@ def cal_angle(x1,x2,z1,z2):
         return(math.acos(xvec/diagvec))
     else:
         return(2*math.pi-math.acos(xvec/diagvec))
+def vec_angle(vec1,dis1,p3,p4):
+    vec2=[p4[0]-p3[0],p4[1]-p3[1]]
+    denom=vec1[0]*vec2[0]+vec1[1]*vec2[1]
+    nom=dis1*(vec2[0]**2+vec2[1]**2)**0.5
+    return(math.acos(denom/nom))
+
 def rgb_to_hex(r, g, b):
   return '#{:02X}{:02X}{:02X}'.format(r, g, b)
 
@@ -89,12 +98,17 @@ exec(open(path("mouse_track.py")).read())
 
 # Info bar
 def set_infobar():
-    dis="Align: "+str(cur_error_angle.get())+" / "
-    dis=dis+"Pixel: "+str(cur_error_pixel.get())+" / "
-    dis=dis+"PixPer: "+str(cur_pixel_perfect.get())+" / "
-    dis=dis+cur_cinp.get()+" / "
-    dis=dis+game_version.get()+" / "
-    dis=dis+"~"+str(cur_within.get())
+    if calibrating==1:
+        dis="Calibrating mouse tracking. Press F9, turn 90 degree and press F10"
+    elif calibrating==2:
+        dis="Calibrating mouse tracking (F9 pressed). Turn 90 degree and press F10"
+    else:
+        dis="Align: "+str(cur_error_angle.get())+" / "
+        dis=dis+"Pixel: "+str(cur_error_pixel.get())+" / "
+        dis=dis+"PixPer: "+str(cur_pixel_perfect.get())+" / "
+        dis=dis+cur_cinp.get()+" / "
+        dis=dis+game_version.get()+" / "
+        dis=dis+"~"+str(cur_within.get())
     option_info.config(text=dis)
 option_info=tk.Label(win,text="Align: 0.3 / Pixel: 0.1 / PixPer: 0.1 / Copy+Paste / 1.18.30+ / ~4000",font=ft_small,fg="#888888")
 option_info.place(x=0,y=278)
@@ -109,7 +123,7 @@ menubar.add_cascade(label="About",menu=about)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.2 (2025.9.22.)")
+about.add_cascade(label="Version 2.3 (2025.9.27.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -155,10 +169,39 @@ options.add_cascade(label="Pixel Perfect Error",menu=pixelperfectmenu)
 for i in range(len(pixel_perfect_list)):
     pixelperfectmenu.add_radiobutton(label=pixel_perfect_list[i],variable=cur_pixel_perfect,value=pixel_perfect_list[i],command=set_infobar)
 
+## Mouse Tracking
+def start_calibration():
+    global calibrating
+    calibrating=1
+    set_infobar()
+def clear_calibration():
+    global default, track_angle, track_move
+    default[10]=0
+    default[11]=0
+    default[12]=0
+    mousecalibratemenu.delete(2,3)
+    mousecalibratemenu.add_cascade(label="Mean: "+f'{default[10]:.1f}')
+    mousecalibratemenu.add_cascade(label="SD: "+f'{default[11]:.1f}')
+    if cur_input_mode.get()=="Mouse Tracking":
+        track_dis.config(text="Add calibration first")
+        start_calibration()
+        track_angle=0
+        track_move=0
+        c2_dis.config(text="Angle: 0 Deg")
+calibrating=0
+mousecalibratemenu=tk.Menu(options,tearoff=False)
+options.add_cascade(label="Mouse Tracking",menu=mousecalibratemenu)
+mousecalibratemenu.add_cascade(label="Add Calibration Data",command=start_calibration)
+mousecalibratemenu.add_cascade(label="Clear Calibration Data",command=clear_calibration)
+mousecalibratemenu.add_cascade(label="Mean: "+f'{default[10]:.1f}')
+mousecalibratemenu.add_cascade(label="SD: "+f'{default[11]:.1f}')
+measuring=0
+track_angle=0
+
 # Input options
 ## Mode
 def set_mode():
-    global x1,x2,z1,z2
+    global x1,x2,z1,z2, measuring, track_move, track_angle
     c1_but.place_forget()
     c2_but.place_forget()
     x1_inp.place_forget()
@@ -168,7 +211,7 @@ def set_mode():
     facing_dir.place_forget()
     pixel_inp.place_forget()
     pixel_dis.place_forget()
-    pixel_inp.place_forget()
+    track_dis.place_forget()
     if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
         c1_but.place(x=200,y=5)
         c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
@@ -176,7 +219,7 @@ def set_mode():
             x2,z2=0,0
             c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
             c2_but.place(x=200,y=35)
-        else:
+        elif cur_input_mode.get()=="Corner+Facing":
             c2_dis.config(text="Direction:")
             facing_dir.set("Facing")
             facing_dir.place(x=90,y=37)
@@ -199,7 +242,7 @@ def set_mode():
             c2_dis.config(text="Coord 2:")
             x2_inp.place(x=80,y=38)
             z2_inp.place(x=160,y=38)
-        else:
+        elif cur_input_mode.get()=="Corner+Facing":
             c2_dis.config(text="Direction:")
             facing_dir.set("Facing")
             facing_dir.place(x=90,y=37)
@@ -210,6 +253,17 @@ def set_mode():
         pixel_dis.place(x=342,y=9)
         pixel_inp.place(x=330,y=30)
         pixel_inp.delete(0,tk.END)
+    elif cur_input_mode.get()=="Mouse Tracking":
+        c2_dis.config(text="Angle: 0 Deg")
+        if default[12]>0:
+            track_dis.config(text="Face pos X, Press F9")
+            measuring=0
+        else:
+            track_dis.config(text="Add calibration first")
+            start_calibration()
+        track_dis.place(x=115,y=37)
+        track_move=0
+        track_angle=0
     set_infobar()
 
 cur_input_mode=tk.StringVar()
@@ -220,6 +274,7 @@ options.add_cascade(label="Input Mode",menu=inputmodemenu)
 inputmodemenu.add_radiobutton(label="Coord+Coord",value="Coord+Coord",variable=cur_input_mode,command=set_mode)
 inputmodemenu.add_radiobutton(label="Corner+Facing",value="Corner+Facing",variable=cur_input_mode,command=set_mode)
 inputmodemenu.add_radiobutton(label="Pixel Perfect",value="Pixel Perfect",variable=cur_input_mode,command=set_mode)
+inputmodemenu.add_radiobutton(label="Mouse Tracking",value="Mouse Tracking",variable=cur_input_mode,command=set_mode)
 
 ## Coordinate
 cur_cinp=tk.StringVar()
@@ -231,6 +286,15 @@ cinpmenu.add_radiobutton(label="Copy+Paste (Corner)",value="Copy+Paste (Corner)"
 cinpmenu.add_radiobutton(label="Show Coordinate",value="Show Coordinate",variable=cur_cinp,command=set_mode)
 cinpmenu.add_radiobutton(label="Count Block Pixels",value="Block Pixel",variable=cur_cinp,command=set_mode)
 cinpmenu.add_radiobutton(label="Count Monitor Pixels",value="Monitor Pixel",variable=cur_cinp,command=set_mode)
+
+## Mouse Track display
+if default[12]>0:
+    track_dis=tk.Label(win,text="Face pos X and press F9")
+else:
+    track_dis=tk.Label(win,text="Add calibration first")
+    start_calibration()
+if cur_input_mode.get()=="Mouse Tracking":
+    track_dis.place(x=15,y=37)
 
 # Display options
 pc_list=[-1,0,6,8,10,12,14,16,18,20]
@@ -354,8 +418,15 @@ def set_c2():
     c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
 
 def add_point():
-    global pt, x1, x2, z1, z2, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_imode
-    if cur_cinp.get()=="Show Coordinate" and cur_input_mode.get()!="Corner+Facing":
+    global pt, x1, x2, z1, z2, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, track_angle, track_move
+    print(x1_inp.get())
+    print(z1_inp.get())
+    curmode=cur_input_mode.get()
+    if curmode=="Corner+Facing" or curmode=="Mouse Tracking":
+        cneed=False
+    else:
+        cneed=True
+    if cur_cinp.get()=="Show Coordinate" and cneed:
         try:
             x1=int(x1_inp.get())+0.5
             x2=int(x2_inp.get())+0.5
@@ -369,7 +440,7 @@ def add_point():
             z1=float(z1_inp.get())
         except:
             x1,z1=0,0
-    elif (cur_cinp.get()=="Block Pixel" or cur_cinp.get()=="Monitor Pixel") and cur_input_mode.get()!="Corner+Facing":
+    elif (cur_cinp.get()=="Block Pixel" or cur_cinp.get()=="Monitor Pixel") and cneed:
         try:
             x1=float(x1_inp.get())
             x2=float(x2_inp.get())
@@ -383,6 +454,7 @@ def add_point():
             z1=float(z1_inp.get())
         except:
             x1,z1=0,0
+    print([x1,z1,x2,z2])
     if cur_input_mode.get()=="Coord+Coord":
         valid=True
         if cur_cinp.get()=="Copy+Paste (Corner)":
@@ -400,7 +472,6 @@ def add_point():
             pt_coord.insert(0,cur_cinp.get())
             pt_pixel.insert(0,0)
             pt_pixel_err.insert(0,0)
-            pt_imode.insert(0,cur_input_mode.get())
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
             if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
@@ -468,7 +539,6 @@ def add_point():
                 pt_prec.insert(0,cur_error_pixel.get())
                 pt_pixel.insert(0,0)
                 pt_pixel_err.insert(0,0)
-                pt_imode.insert(0,cur_input_mode.get())
                 x1,x2,z1,z2=0,0,0,0
                 if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
                     c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
@@ -479,7 +549,7 @@ def add_point():
                     z2_inp.delete(0,tk.END)
                 add_prob(0)
                 display()
-    else:
+    elif cur_input_mode.get()=="Pixel Perfect":
         valid=True
         if cur_cinp.get()=="Copy+Paste (Corner)":
             mod1=round(x1%1,2)
@@ -502,7 +572,6 @@ def add_point():
             pt_coord.insert(0,cur_cinp.get())
             pt_pixel.insert(0,npixel)
             pt_pixel_err.insert(0,cur_pixel_perfect.get())
-            pt_imode.insert(0,cur_input_mode.get())
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
             pixel_inp.delete(0,tk.END)
@@ -516,7 +585,37 @@ def add_point():
                 z2_inp.delete(0,tk.END)
             add_prob(0)
             display()
-        
+    else:
+        valid=True
+        if cur_cinp.get()=="Copy+Paste (Corner)":
+            mod1=round(x1%1,2)
+            mod2=round(z1%1,2)
+            if (mod1==0.3 or mod1==0.7) and (mod2==0.3 or mod2==0.7):
+                valid=True
+            else:
+                valid=False
+        if valid:
+            print([x1,z1])
+            pt.insert(0,[x1,z1,track_move,default[10],default[11]])
+            pt_mode.insert(0,cur_input_mode.get())
+            pt_err.insert(0,cur_error_angle.get())
+            pt_prec.insert(0,0)
+            pt_coord.insert(0,cur_cinp.get())
+            pt_pixel.insert(0,0)
+            pt_pixel_err.insert(0,cur_pixel_perfect.get())
+            listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+str(round(track_angle)))
+            x1,x2,z1,z2,track_move,track_angle=0,0,0,0,0,0
+            if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
+                c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
+            else:
+                x1_inp.delete(0,tk.END)
+                x2_inp.delete(0,tk.END)
+                z1_inp.delete(0,tk.END)
+                z2_inp.delete(0,tk.END)
+            c2_dis.config(text="Angle: 0 Deg")
+            add_prob(0)
+            display()
+
 def del_point():
     global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err
     try:
@@ -531,7 +630,7 @@ def del_point():
         pt_pixel_err.pop(ind)
         load_prob()
         for i in range(len(pt)):
-            add_prob[i]
+            add_prob(i)
         display()
     except:
         pass
@@ -568,6 +667,7 @@ c2_but=tk.Button(win,text="PASTE",command=set_c2,padx=5,pady=1)
 c2_but.place(x=200,y=35)
 pixel_dis=tk.Label(win,text="Pixel")
 
+# Hotkey
 def key_press1(event):
     set_c1()
 bg=BG()
@@ -586,12 +686,20 @@ bg3=BG()
 bg3.start()
 bg3.gbind("<=>",key_press3)
 
+# Mouse track
+sum_move=0
 def start_track():
-    global sum_move
+    global sum_move, calibrating, measuring
     print("START TRACKING")
     rid = RAWINPUTDEVICE(HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE, RIDEV_INPUTSINK, hwnd)
     RegisterRawInputDevices(ct.byref(rid), 1, ct.sizeof(rid))
     sum_move=0
+    if calibrating==1:
+        calibrating=2
+        set_infobar()
+    if calibrating==0 and cur_input_mode.get()=="Mouse Tracking" and default[12]>0:
+        track_dis.config(text="Align and press F10")
+        measuring=2
 def key_press4(event):
     start_track()
 bg4=BG()
@@ -599,11 +707,31 @@ bg4.start()
 bg4.gbind("<F9>",key_press4)
 
 def stop_track():
-    global sum_move
+    global sum_move, default, calibrating, track_angle, measuring, track_move
     print("STOP TRACKING")
     rid = RAWINPUTDEVICE(HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE, RIDEV_REMOVE, None)
     RegisterRawInputDevices(ct.byref(rid), 1, ct.sizeof(rid))
     print(sum_move)
+    if calibrating==2:
+        default[10]=(default[10]*default[12]+sum_move)/(default[12]+1)
+        default[11]=((default[12]*default[11]**2+(sum_move-default[10])**2)/(default[12]+1))**0.5
+        default[12]=default[12]+1
+        calibrating=0
+        set_infobar()
+        mousecalibratemenu.delete(2,3)
+        mousecalibratemenu.add_cascade(label="Mean: "+f'{default[10]:.1f}')
+        mousecalibratemenu.add_cascade(label="SD: "+f'{default[11]:.1f}')
+        if cur_input_mode.get()=="Mouse Tracking":
+            measuring=0
+            track_dis.config(text="Face pos X, Press F9")
+            track_angle=(track_move/default[10]*90)%360
+            c2_dis.config(text="Angle: "+str(round(track_angle))+" Deg")
+    if calibrating==0 and cur_input_mode.get()=="Mouse Tracking" and measuring==2 and default[12]>0:
+        track_move=sum_move
+        track_angle=(track_move/default[10]*90)%360
+        c2_dis.config(text="Angle: "+str(round(track_angle))+" Deg")
+        measuring=0
+        track_dis.config(text="Face pos X, Press F9")
 def key_press5(event):
     stop_track()
 bg5=BG()
@@ -668,11 +796,16 @@ def add_prob(n):
         error_angle=math.atan(max(0.06,pt_err[n])/12/16)
     else:
         error_angle=math.atan(pt_err[n]/12/16)
-    if pt_imode[n]=="Pixel Perfect":
+    if pt_mode[n]=="Pixel Perfect":
         error_angle=error_angle+0.01
-    if pt_mode[n]=="Corner+Facing":
+    elif pt_mode[n]=="Corner+Facing":
         error_precision=math.atan(pt_prec[n]/16/0.3)
         error_dist=0
+    elif pt_mode[n]=="Mouse Tracking":
+        error_prec1=math.pi/2/pt[n][3]*0.3
+        k=min(0.06,max(0.03,pt[n][4]/pt[n][3]))
+        error_prec2=k/(2**0.5)*abs(pt[n][2])/pt[n][3]*math.pi/2
+        error_precision=(error_prec1**2+error_prec2**2)**0.5
     elif pt_coord[n]=="Copy+Paste":
         error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.25
         error_dist=0.3/100
@@ -691,15 +824,16 @@ def add_prob(n):
     error_combine=(error_angle**2+error_precision**2)**0.5
     print([error_angle,error_precision,error_combine])
 
-    if pt_imode[n]!="Pixel Perfect":
+    # Coord+Coord
+    if pt_mode[n]=="Coord+Coord" or pt_mode[n]=="Corner+Facing":
         # Line
         a=x1+0.5
         b=z1+0.5
         if x1==x2:
             xeye1=x1
             xeye2=x1
-            zeye1=z1+143.75**0.5
-            zeye2=z1-143.75**0.5
+            zeye1=b+143.75**0.5
+            zeye2=b-143.75**0.5
         else:
             p=(z2-z1)/(x2-x1)
             q=z1-p*x1
@@ -725,9 +859,10 @@ def add_prob(n):
             xeye=xeye2
             zeye=zeye2
 
-        angle=cal_angle(a,xeye,b,zeye)
-        cand_angle=[cal_angle(a,prob[i][2],b,prob[i][3]) for i in range(len(prob))]
-        angle_dif=[min(abs(cand_angle[i]-angle),abs(cand_angle[i]-angle+2*math.pi),abs(cand_angle[i]-angle-2*math.pi)) for i in range(len(prob))]
+        vec_eye=[xeye-a,zeye-b]
+        print(vec_eye)
+        vec_dist=(vec_eye[0]**2+vec_eye[1]**2)**0.5
+        angle_dif=[vec_angle(vec_eye,vec_dist,[a,b],[prob[i][2],prob[i][3]]) for i in range(len(prob))]
         new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine) for i in range(len(prob))]
         prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
         sumprob=sum(prob[i][0] for i in range(len(prob)))
@@ -737,7 +872,7 @@ def add_prob(n):
         else:
             prob_common=1/lencand
             prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
-    else:
+    elif pt_mode[n]=="Pixel Perfect":
         # Pixel Perfect
         if game_version.get()=="1.21.100+":
             shift=0.196
@@ -751,8 +886,8 @@ def add_prob(n):
         a=x1+0.5
         b=z1+0.5
         if z1==z2:
-            xeye1=x1+143.75**0.5
-            xeye2=x1-143.75**0.5
+            xeye1=a+143.75**0.5
+            xeye2=a-143.75**0.5
             zeye1=z1
             zeye2=z1
         else:
@@ -781,12 +916,9 @@ def add_prob(n):
             xeye=xeye2
             zeye=zeye2
 
-        print([xeye,zeye])
-
-        angle=cal_angle(a,xeye,b,zeye)
-        print((a,xeye,b,zeye))
-        cand_angle=[cal_angle(a,prob[i][2],b,prob[i][3]) for i in range(len(prob))]
-        angle_dif=[min(abs(cand_angle[i]-angle),abs(cand_angle[i]-angle+2*math.pi),abs(cand_angle[i]-angle-2*math.pi)) for i in range(len(prob))]
+        vec_eye=[xeye-a,zeye-b]
+        vec_dist=(vec_eye[0]**2+vec_eye[1]**2)**0.5
+        angle_dif=[vec_angle(vec_eye,vec_dist,[a,b],[prob[i][2],prob[i][3]]) for i in range(len(prob))]
         new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine) for i in range(len(prob))]
         prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
         sumprob=sum(prob[i][0] for i in range(len(prob)))
@@ -812,6 +944,55 @@ def add_prob(n):
         cand_pf=[k/((prob[i][2]-a)**2+(prob[i][3]-b)**2)**0.5 for i in range(len(prob))]
         pf_dif=[abs(cand_pf[i]-pf) for i in range(len(prob))]
         new_prob=[prob[i][0]*PDF(pf_dif[i]/error_pf) for i in range(len(prob))]
+        prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
+        sumprob=sum(prob[i][0] for i in range(len(prob)))
+        if sumprob>0:
+            for i in range(len(prob)):
+                prob[i][0]=prob[i][0]/sumprob
+        else:
+            prob_common=1/lencand
+            prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
+    elif pt_mode[n]=="Mouse Tracking":
+        # Mouse tracking
+        x2=x1+math.cos(pt[n][2]/pt[n][3]*math.pi/2)*10
+        z2=z1+math.sin(pt[n][2]/pt[n][3]*math.pi/2)*10
+        a=x1+0.5
+        b=z1+0.5
+        if x1==x2:
+            xeye1=x1
+            xeye2=x1
+            zeye1=b+143.75**0.5
+            zeye2=b-143.75**0.5
+        else:
+            p=(z2-z1)/(x2-x1)
+            q=z1-p*x1
+            r=12
+
+            denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r
+            denom2=a+b*p-p*q
+            nom=p*p+1
+            xeye1=(denom1**0.5+denom2)/nom
+            xeye2=(-1*denom1**0.5+denom2)/nom
+            zeye1=p*xeye1+q
+            zeye2=p*xeye2+q
+
+        dir_vec=(x2-x1,z2-z1)
+        vec1=(xeye1-a,zeye1-b)
+        vec2=(xeye2-a,zeye2-b)
+        cos1=dir_vec[0]*vec1[0]+dir_vec[1]*vec1[1]
+        cos2=dir_vec[0]*vec2[0]+dir_vec[1]*vec2[1]
+        if cos1>cos2:
+            xeye=xeye1
+            zeye=zeye1
+        else:
+            xeye=xeye2
+            zeye=zeye2
+
+        vec_eye=[xeye-a,zeye-b]
+        print(vec_eye)
+        vec_dist=(vec_eye[0]**2+vec_eye[1]**2)**0.5
+        angle_dif=[vec_angle(vec_eye,vec_dist,[a,b],[prob[i][2],prob[i][3]]) for i in range(len(prob))]
+        new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine) for i in range(len(prob))]
         prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
         sumprob=sum(prob[i][0] for i in range(len(prob)))
         if sumprob>0:
@@ -933,8 +1114,8 @@ def display():
             labels[i][3].config(text="")
 
     if cur_dismean.get()=="Show":
-        mean_x=round(sum(prob_dis[l][2]*prob_dis[l][0] for l in range(len(prob_dis))))
-        mean_z=round(sum(prob_dis[l][3]*prob_dis[l][0] for l in range(len(prob_dis))))
+        mean_x=round(sum(prob[l][2]*prob[l][0] for l in range(len(prob))))
+        mean_z=round(sum(prob[l][3]*prob[l][0] for l in range(len(prob))))
         mean_net_x=mean_x//8
         mean_net_z=mean_z//8
         labels[8][0].config(text="("+str(mean_x)+","+str(mean_z)+")")
@@ -944,8 +1125,7 @@ def display():
         if cur_pc_value>0:
             p2=0
             for l in range(len(prob)):
-                k=prob[l][1]
-                if (cand_x[k]-mean_x)**2+(cand_z[l]-mean_z)**2 < pc2:
+                if (prob[l][2]-mean_x)**2+(prob[l][3]-mean_z)**2 < pc2:
                     p2=p2+prob[l][0]
             col_code=(math.floor(255*p2),0,0)
             labels[8][3].config(text=disprob2(p2),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
@@ -984,6 +1164,7 @@ def close():
     new_default=[str(cur_error_angle.get()),str(cur_error_pixel.get()),str(cur_pixel_perfect.get())]
     new_default=new_default+[cur_input_mode.get(),cur_cinp.get(),str(cur_pc.get()),cur_dismean.get()]
     new_default=new_default+[game_version.get(),cur_prior.get(),str(cur_within.get())]
+    new_default=new_default+[str(default[10]),str(default[11]),str(default[12])]
     f=open("StroCate_setting.csv","w")
     a=csv.writer(f)
     a.writerow(new_default)
