@@ -171,6 +171,7 @@ for i in range(len(pixel_perfect_list)):
 
 ## Mouse Tracking
 def start_calibration():
+    print(1)
     global calibrating
     calibrating=1
     set_infobar()
@@ -188,7 +189,7 @@ def clear_calibration():
         track_angle=0
         track_move=0
         c2_dis.config(text="Angle: 0 Deg")
-calibrating=0
+
 mousecalibratemenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Mouse Tracking",menu=mousecalibratemenu)
 mousecalibratemenu.add_cascade(label="Add Calibration Data",command=start_calibration)
@@ -288,14 +289,15 @@ cinpmenu.add_radiobutton(label="Count Block Pixels",value="Block Pixel",variable
 cinpmenu.add_radiobutton(label="Count Monitor Pixels",value="Monitor Pixel",variable=cur_cinp,command=set_mode)
 
 ## Mouse Track display
+if cur_input_mode.get()=="Mouse Tracking":
+    track_dis.place(x=15,y=37)
+    if default[12]==0:
+        start_calibration()
 if default[12]>0:
     track_dis=tk.Label(win,text="Face pos X and press F9")
 else:
     track_dis=tk.Label(win,text="Add calibration first")
-    start_calibration()
-if cur_input_mode.get()=="Mouse Tracking":
-    track_dis.place(x=15,y=37)
-
+    
 # Display options
 pc_list=[-1,0,6,8,10,12,14,16,18,20]
 cur_pc=tk.IntVar()
@@ -387,6 +389,7 @@ withinmenu.add_radiobutton(label="3000",value=3000,variable=cur_within,command=s
 withinmenu.add_radiobutton(label="4000",value=4000,variable=cur_within,command=set_version)
 
 # Initialize infobar
+calibrating=0
 set_infobar()
 
 # Add coordinate
