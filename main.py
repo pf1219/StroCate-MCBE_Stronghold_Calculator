@@ -123,7 +123,7 @@ menubar.add_cascade(label="About",menu=about)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.3 (2025.9.27.)")
+about.add_cascade(label="Version 2.31 (2025.9.27.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -716,6 +716,7 @@ def stop_track():
     RegisterRawInputDevices(ct.byref(rid), 1, ct.sizeof(rid))
     print(sum_move)
     if calibrating==2:
+        sum_move=abs(sum_move)
         default[10]=(default[10]*default[12]+sum_move)/(default[12]+1)
         default[11]=((default[12]*default[11]**2+(sum_move-default[10])**2)/(default[12]+1))**0.5
         default[12]=default[12]+1
@@ -795,6 +796,7 @@ def add_prob(n):
     z2=pt[n][3]
 
     dist=((x1-x2)**2+(z1-z2)**2)**0.5
+    error_precision=-1000
     if game_version.get()=="1.21.100+":
         error_angle=math.atan(max(0.06,pt_err[n])/12/16)
     else:
@@ -809,21 +811,22 @@ def add_prob(n):
         k=min(0.06,max(0.03,pt[n][4]/pt[n][3]))
         error_prec2=k/(2**0.5)*abs(pt[n][2])/pt[n][3]*math.pi/2
         error_precision=(error_prec1**2+error_prec2**2)**0.5
-    elif pt_coord[n]=="Copy+Paste":
-        error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.25
-        error_dist=0.3/100
-    elif pt_coord[n]=="Copy+Paste (Corner)":
-        error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.177
-        error_dist=0.3/100
-    elif pt_coord[n]=="Show Coordinate":
-        error_precision=math.atan(1*math.sqrt(2)/dist)*0.25
-        error_dist=0.3
-    elif pt_coord[n]=="Block Pixel":
-        error_precision=math.atan(1/16*math.sqrt(2)/dist)*0.25
-        error_dist=0.3/16
-    else:
-        error_precision=math.atan(1/16/72*math.sqrt(2)/dist)*0.2
-        error_dist=0.3/1152
+    if error_precision==-1000:
+        if pt_coord[n]=="Copy+Paste":
+            error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.25
+            error_dist=0.3/100
+        elif pt_coord[n]=="Copy+Paste (Corner)":
+            error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.177
+            error_dist=0.3/100
+        elif pt_coord[n]=="Show Coordinate":
+            error_precision=math.atan(1*math.sqrt(2)/dist)*0.25
+            error_dist=0.3
+        elif pt_coord[n]=="Block Pixel":
+            error_precision=math.atan(1/16*math.sqrt(2)/dist)*0.25
+            error_dist=0.3/16
+        else:
+            error_precision=math.atan(1/16/72*math.sqrt(2)/dist)*0.2
+            error_dist=0.3/1152
     error_combine=(error_angle**2+error_precision**2)**0.5
     print([error_angle,error_precision,error_combine])
 
