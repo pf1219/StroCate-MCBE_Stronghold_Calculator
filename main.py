@@ -123,7 +123,7 @@ menubar.add_cascade(label="About",menu=about)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.31 (2025.9.27.)")
+about.add_cascade(label="Version 2.32 (2025.11.22.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -138,6 +138,7 @@ about.add_cascade(label="Hotkeys",menu=hotkeylist)
 hotkeylist.add_cascade(label="[ : Paste coord 1")
 hotkeylist.add_cascade(label="] : Paste coord 2")
 hotkeylist.add_cascade(label="= : Add data")
+hotkeylist.add_cascade(label="F8 : Minimize window")
 hotkeylist.add_cascade(label="F9 : Start mouse tracking")
 hotkeylist.add_cascade(label="F10 : End mouse tracking")
 
@@ -289,14 +290,14 @@ cinpmenu.add_radiobutton(label="Count Block Pixels",value="Block Pixel",variable
 cinpmenu.add_radiobutton(label="Count Monitor Pixels",value="Monitor Pixel",variable=cur_cinp,command=set_mode)
 
 ## Mouse Track display
-if cur_input_mode.get()=="Mouse Tracking":
-    track_dis.place(x=15,y=37)
-    if default[12]==0:
-        start_calibration()
 if default[12]>0:
     track_dis=tk.Label(win,text="Face pos X and press F9")
 else:
     track_dis=tk.Label(win,text="Add calibration first")
+if cur_input_mode.get()=="Mouse Tracking":
+    track_dis.place(x=15,y=37)
+    if default[12]==0:
+        start_calibration()
     
 # Display options
 pc_list=[-1,0,6,8,10,12,14,16,18,20]
@@ -744,6 +745,16 @@ bg5.gbind("<F10>",key_press5)
 
 add_but=tk.Button(win,text="ADD",command=add_point,padx=8,pady=3)
 add_but.place(x=265,y=19)
+
+# Iconify
+def key_press6(event):
+    if win.state()=="iconic":
+        win.state("normal")
+    else:
+        win.state("iconic")
+bg6=BG()
+bg6.start()
+bg6.gbind("<F8>",key_press6)
 
 # Input Coordinate
 x1_inp=tk.Entry(win,width=8)
