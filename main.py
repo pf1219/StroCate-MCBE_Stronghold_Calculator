@@ -2,9 +2,10 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as font
-import pyperclip, math, csv, os, webbrowser, heapq
+import pyperclip, math, csv, os, webbrowser, heapq, pyautogui
 from functools import partial
 from bindglobal import BindGlobal as BG
+import numpy as np
 
 # Pyinstaller setting
 def path(relative_path):
@@ -29,6 +30,8 @@ stair_z=[chunk_z[i]*16+4 for i in range(len(data))]
 net_x=[chunk_x[i]*2 for i in range(len(data))]
 net_z=[chunk_z[i]*2 for i in range(len(data))]
 lencand=len(data)
+
+exec(open(path("screen.py")).read())
 
 # Import setting
 if "StroCate_setting.csv" in os.listdir():
@@ -123,7 +126,7 @@ menubar.add_cascade(label="About",menu=about)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.32 (2025.11.22.)")
+about.add_cascade(label="Version 2.4 (2025.11.23.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -214,7 +217,7 @@ def set_mode():
     pixel_inp.place_forget()
     pixel_dis.place_forget()
     track_dis.place_forget()
-    if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
+    if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
         c1_but.place(x=200,y=5)
         c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
         if cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
@@ -397,26 +400,40 @@ set_infobar()
 x1,z1,x2,z2=0,0,0,0
 
 def set_c1():
-    global x1, z1
+    global x1, z1, coords
     try:
-        inp=pyperclip.paste()
-        inp=inp.split(" ")
-        x1=float(inp[0])
-        z1=float(inp[2])
-        if cur_input_mode.get()=="Corner+Facing" or cur_cinp.get()=="Copy+Paste (Corner)":
-            if round(x1%1,1) not in [0.3,0.7] or round(z1%1,1) not in [0.3,0.7]:
-                x1,z1=0,0
+        if cur_cinp.get()=="Show Coordinate":
+            coords=read_coords()
+            print(coords)
+            if coords!=-1:
+                x1=coords[0]+0.5
+                z1=coords[2]+0.5
+        else:
+            inp=pyperclip.paste()
+            inp=inp.split(" ")
+            x1=float(inp[0])
+            z1=float(inp[2])
+            if cur_input_mode.get()=="Corner+Facing" or cur_cinp.get()=="Copy+Paste (Corner)":
+                if round(x1%1,1) not in [0.3,0.7] or round(z1%1,1) not in [0.3,0.7]:
+                    x1,z1=0,0
     except:
-        x1,z1=0,0
+        x2,z2=0,0
     c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
 
 def set_c2():
-    global x2, z2
+    global x2, z2, coords
     try:
-        inp=pyperclip.paste()
-        inp=inp.split(" ")
-        x2=float(inp[0])
-        z2=float(inp[2])
+        if cur_cinp.get()=="Show Coordinate":
+            coords=read_coords()
+            print(coords)
+            if coords!=-1:
+                x2=coords[0]+0.5
+                z2=coords[2]+0.5
+        else:
+            inp=pyperclip.paste()
+            inp=inp.split(" ")
+            x2=float(inp[0])
+            z2=float(inp[2])
     except:
         x2,z2=0,0
     c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
@@ -430,21 +447,7 @@ def add_point():
         cneed=False
     else:
         cneed=True
-    if cur_cinp.get()=="Show Coordinate" and cneed:
-        try:
-            x1=int(x1_inp.get())+0.5
-            x2=int(x2_inp.get())+0.5
-            z1=int(z1_inp.get())+0.5
-            z2=int(z2_inp.get())+0.5
-        except:
-            x1,x2,z1,z2=0,0,0,0
-    elif cur_cinp.get()=="Show Coordinate":
-        try:
-            x1=float(x1_inp.get())
-            z1=float(z1_inp.get())
-        except:
-            x1,z1=0,0
-    elif (cur_cinp.get()=="Block Pixel" or cur_cinp.get()=="Monitor Pixel") and cneed:
+    if (cur_cinp.get()=="Block Pixel" or cur_cinp.get()=="Monitor Pixel") and cneed:
         try:
             x1=float(x1_inp.get())
             x2=float(x2_inp.get())
@@ -478,7 +481,7 @@ def add_point():
             pt_pixel_err.insert(0,0)
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
-            if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
+            if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
                 c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
                 c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
             else:
@@ -544,7 +547,7 @@ def add_point():
                 pt_pixel.insert(0,0)
                 pt_pixel_err.insert(0,0)
                 x1,x2,z1,z2=0,0,0,0
-                if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
+                if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
                     c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
                 else:
                     x1_inp.delete(0,tk.END)
@@ -579,7 +582,7 @@ def add_point():
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
             pixel_inp.delete(0,tk.END)
-            if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
+            if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
                 c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
                 c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
             else:
@@ -609,7 +612,7 @@ def add_point():
             pt_pixel_err.insert(0,cur_pixel_perfect.get())
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+str(round(track_angle)))
             x1,x2,z1,z2,track_move,track_angle=0,0,0,0,0,0
-            if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)":
+            if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
                 c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
             else:
                 x1_inp.delete(0,tk.END)
