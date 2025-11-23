@@ -2,10 +2,11 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as font
-import pyperclip, math, csv, os, webbrowser, heapq, pyautogui
+import pyperclip, math, csv, os, webbrowser, heapq
 from functools import partial
 from bindglobal import BindGlobal as BG
-import numpy as np
+from pyautogui import screenshot
+from numpy import array, uint8, array_equal
 
 # Pyinstaller setting
 def path(relative_path):
@@ -37,10 +38,10 @@ exec(open(path("screen.py")).read())
 if "StroCate_setting.csv" in os.listdir():
     default=list(csv.reader(open("StroCate_setting.csv")))[0]
 else:
-    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","4000",0,0,0]
-while len(default)<13:
+    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","4000",0,0,0,0]
+while len(default)<14:
     default.append(0)
-for i in range(10,13):
+for i in range(10,14):
     default[i]=float(default[i])
 
 pt=[]
@@ -75,7 +76,10 @@ def vec_angle(vec1,dis1,p3,p4):
     vec2=[p4[0]-p3[0],p4[1]-p3[1]]
     denom=vec1[0]*vec2[0]+vec1[1]*vec2[1]
     nom=dis1*(vec2[0]**2+vec2[1]**2)**0.5
-    return(math.acos(denom/nom))
+    if nom==0:
+        return(1000)
+    else:
+        return(math.acos(denom/nom))
 
 def rgb_to_hex(r, g, b):
   return '#{:02X}{:02X}{:02X}'.format(r, g, b)
@@ -126,7 +130,7 @@ menubar.add_cascade(label="About",menu=about)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.4 (2025.11.23.)")
+about.add_cascade(label="Version 2.41 (2025.11.23.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -332,6 +336,16 @@ def set_dismean():
     display()
 dismeanmenu.add_radiobutton(label="Show",value="Show",variable=cur_dismean,command=set_dismean)
 dismeanmenu.add_radiobutton(label="Hide",value="Hide",variable=cur_dismean,command=set_dismean)
+
+high_col=tk.IntVar()
+high_col.set(int(default[13]))
+highcolmenu=tk.Menu(options,tearoff=False)
+options.add_cascade(label="Highlight Color",menu=highcolmenu)
+def set_highcol():
+    display()
+highcolmenu.add_radiobutton(label="Red",value=0,variable=high_col,command=set_highcol)
+highcolmenu.add_radiobutton(label="Green",value=1,variable=high_col,command=set_highcol)
+highcolmenu.add_radiobutton(label="Blue",value=2,variable=high_col,command=set_highcol)
 
 # Load data
 def set_version():
@@ -682,7 +696,8 @@ bg.start()
 bg.gbind("<[>",key_press1)
 
 def key_press2(event):
-    set_c2()
+    if cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
+        set_c2()
 bg2=BG()
 bg2.start()
 bg2.gbind("<]>",key_press2)
@@ -1012,7 +1027,7 @@ def add_prob(n):
         print(vec_eye)
         vec_dist=(vec_eye[0]**2+vec_eye[1]**2)**0.5
         angle_dif=[vec_angle(vec_eye,vec_dist,[a,b],[prob[i][2],prob[i][3]]) for i in range(len(prob))]
-        new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine) for i in range(len(prob))]
+        new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine)**0.5 for i in range(len(prob))]
         prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
         sumprob=sum(prob[i][0] for i in range(len(prob)))
         if sumprob>0:
@@ -1115,17 +1130,20 @@ def display():
             
         if k<0.05:
             k2=k*(1/0.05)
-            col_code=(math.floor(k2*127),0,0)
+            col_code=[0,0,0]
+            col_code[high_col.get()]=math.floor(k2*127)
         else:
             k2=(k-0.05)*(1/0.95)
-            col_code=(math.floor(127+k2*127),0,0)
+            col_code=[0,0,0]
+            col_code[high_col.get()]=math.floor(127+k2*127)
         if i==0 and prob_dis[i][0]>2/lencand:
             labels[i][2].config(text=disprob2(prob_dis[i][0]),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft2)
         else:
             labels[i][2].config(text=disprob2(prob_dis[i][0]),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
 
         if cur_pc_value>0:
-            col_code=(math.floor(255*prob2[i]),0,0)
+            col_code=[0,0,0]
+            col_code[high_col.get()]=math.floor(255*prob2[i])
             if max(prob2)==prob2[i] and prob2[i]>0.1:
                 labels[i][3].config(text=disprob2(prob2[i]),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft2)
             else:
@@ -1134,8 +1152,8 @@ def display():
             labels[i][3].config(text="")
 
     if cur_dismean.get()=="Show":
-        mean_x=round(sum(prob[l][2]*prob[l][0] for l in range(len(prob))))
-        mean_z=round(sum(prob[l][3]*prob[l][0] for l in range(len(prob))))
+        mean_x=round(sum(prob[l][2]*prob[l][0] for l in range(len(prob))))+2
+        mean_z=round(sum(prob[l][3]*prob[l][0] for l in range(len(prob))))+2
         mean_net_x=mean_x//8
         mean_net_z=mean_z//8
         labels[8][0].config(text="("+str(mean_x)+","+str(mean_z)+")")
@@ -1147,7 +1165,8 @@ def display():
             for l in range(len(prob)):
                 if (prob[l][2]-mean_x)**2+(prob[l][3]-mean_z)**2 < pc2:
                     p2=p2+prob[l][0]
-            col_code=(math.floor(255*p2),0,0)
+            col_code=[0,0,0]
+            col_code[high_col.get()]=math.floor(255*p2)
             labels[8][3].config(text=disprob2(p2),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
         else:
             labels[i][3].config(text="")
@@ -1184,7 +1203,7 @@ def close():
     new_default=[str(cur_error_angle.get()),str(cur_error_pixel.get()),str(cur_pixel_perfect.get())]
     new_default=new_default+[cur_input_mode.get(),cur_cinp.get(),str(cur_pc.get()),cur_dismean.get()]
     new_default=new_default+[game_version.get(),cur_prior.get(),str(cur_within.get())]
-    new_default=new_default+[str(default[10]),str(default[11]),str(default[12])]
+    new_default=new_default+[str(default[10]),str(default[11]),str(default[12]),str(default[13])]
     f=open("StroCate_setting.csv","w")
     a=csv.writer(f)
     a.writerow(new_default)
