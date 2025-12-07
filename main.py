@@ -130,7 +130,7 @@ menubar.add_cascade(label="About",menu=about)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.41 (2025.11.23.)")
+about.add_cascade(label="Version 2.42 (2025.12.07.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -453,7 +453,7 @@ def set_c2():
     c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
 
 def add_point():
-    global pt, x1, x2, z1, z2, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, track_angle, track_move
+    global pt, x1, x2, z1, z2, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, track_angle, track_move, sum_abs
     print(x1_inp.get())
     print(z1_inp.get())
     curmode=cur_input_mode.get()
@@ -617,7 +617,8 @@ def add_point():
                 valid=False
         if valid:
             print([x1,z1])
-            pt.insert(0,[x1,z1,track_move,default[10],default[11]])
+            pt.insert(0,[x1,z1,track_move,default[10],default[11],sum_abs])
+            print([track_move,sum_abs])
             pt_mode.insert(0,cur_input_mode.get())
             pt_err.insert(0,cur_error_angle.get())
             pt_prec.insert(0,0)
@@ -625,7 +626,7 @@ def add_point():
             pt_pixel.insert(0,0)
             pt_pixel_err.insert(0,cur_pixel_perfect.get())
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+str(round(track_angle)))
-            x1,x2,z1,z2,track_move,track_angle=0,0,0,0,0,0
+            x1,x2,z1,z2,track_move,track_angle,sum_abs=0,0,0,0,0,0,0
             if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
                 c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
             else:
@@ -710,12 +711,14 @@ bg3.gbind("<=>",key_press3)
 
 # Mouse track
 sum_move=0
+sum_abs=0
 def start_track():
-    global sum_move, calibrating, measuring
+    global sum_move, calibrating, measuring, sum_abs
     print("START TRACKING")
     rid = RAWINPUTDEVICE(HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE, RIDEV_INPUTSINK, hwnd)
     RegisterRawInputDevices(ct.byref(rid), 1, ct.sizeof(rid))
     sum_move=0
+    sum_abs=0
     if calibrating==1:
         calibrating=2
         set_infobar()
@@ -729,7 +732,7 @@ bg4.start()
 bg4.gbind("<F9>",key_press4)
 
 def stop_track():
-    global sum_move, default, calibrating, track_angle, measuring, track_move
+    global sum_move, default, calibrating, track_angle, measuring, track_move, sum_abs
     print("STOP TRACKING")
     rid = RAWINPUTDEVICE(HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE, RIDEV_REMOVE, None)
     RegisterRawInputDevices(ct.byref(rid), 1, ct.sizeof(rid))
@@ -837,8 +840,8 @@ def add_prob(n):
         error_dist=0
     elif pt_mode[n]=="Mouse Tracking":
         error_prec1=math.pi/2/pt[n][3]*0.3
-        k=min(0.06,max(0.03,pt[n][4]/pt[n][3]))
-        error_prec2=k/(2**0.5)*abs(pt[n][2])/pt[n][3]*math.pi/2
+        k=min(0.05,max(0.02,pt[n][4]/pt[n][3]))
+        error_prec2=k/(2**0.5)*pt[n][5]/pt[n][3]*math.pi/2
         error_precision=(error_prec1**2+error_prec2**2)**0.5
     if error_precision==-1000:
         if pt_coord[n]=="Copy+Paste":
