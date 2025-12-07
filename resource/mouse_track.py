@@ -138,14 +138,16 @@ DispatchMessageW.argtypes = ct.POINTER(w.MSG),
 DispatchMessageW.restype = LRESULT
 
 def handle_raw_input(lparam):
-    global sum_move
+    global sum_move, sum_abs
     raw_input_data = RAWINPUT()
     raw_input_size = w.UINT(ct.sizeof(raw_input_data))
 
     # Get raw input data
     GetRawInputData(HRAWINPUT(lparam), RID_INPUT, ct.byref(raw_input_data), ct.byref(raw_input_size), ct.sizeof(RAWINPUTHEADER))
     if raw_input_data.header.dwType == 0:
-        sum_move=sum_move+raw_input_data.data.mouse.lLastX
+        delta_x=raw_input_data.data.mouse.lLastX
+        sum_move=sum_move+delta_x
+        sum_abs=sum_abs+abs(delta_x)
 
 @WNDPROC  # decorating a callback with its prototype makes it callable from C
 def wnd_proc(hwnd, msg, wparam, lparam):
