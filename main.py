@@ -7,6 +7,7 @@ from functools import partial
 from bindglobal import BindGlobal as BG
 from pyautogui import screenshot
 from numpy import array, uint8, array_equal
+import sys
 
 # Pyinstaller setting
 def path(relative_path):
@@ -1269,6 +1270,7 @@ def close():
 
     # Close window
     win.destroy()
+    sys.exit()
 win.protocol("WM_DELETE_WINDOW",close)
 
 # Display
