@@ -38,11 +38,13 @@ exec(open(path("screen.py")).read())
 if "StroCate_setting.csv" in os.listdir():
     default=list(csv.reader(open("StroCate_setting.csv")))[0]
 else:
-    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","4000",0,0,0,0]
+    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","4000",0,0,0,0,"Show coordinate"]
 while len(default)<14:
     default.append(0)
 for i in range(10,14):
     default[i]=float(default[i])
+if len(default)<15:
+    default.append("Show coordinate")
 
 pt=[]
 pt_mode=[]
@@ -51,6 +53,7 @@ pt_err=[]
 pt_coord=[]
 pt_pixel=[]
 pt_pixel_err=[]
+pt_manual=[]
 
 # Functions
 def PDF(x):
@@ -124,13 +127,50 @@ option_info.place(x=0,y=278)
 menubar=tk.Menu(win)
 options=tk.Menu(menubar,tearoff=False)
 menubar.add_cascade(label="Options",menu=options)
+helpbar=tk.Menu(menubar,tearoff=False)
+menubar.add_cascade(label="Help",menu=helpbar)
 about=tk.Menu(menubar,tearoff=False)
 menubar.add_cascade(label="About",menu=about)
+
+# Help
+hotkeylist=tk.Menu(helpbar,tearoff=False)
+helpbar.add_cascade(label="Hotkeys",menu=hotkeylist)
+hotkeylist.add_cascade(label="[ : Paste coord 1")
+hotkeylist.add_cascade(label="] : Paste coord 2")
+hotkeylist.add_cascade(label="= : Add data")
+hotkeylist.add_cascade(label="F8 : Minimize window")
+hotkeylist.add_cascade(label="F9 : Start mouse tracking")
+hotkeylist.add_cascade(label="F10 : End mouse tracking")
+helpbar.add_separator()
+
+helpeye=tk.Menu(helpbar,tearoff=False)
+helpbar.add_cascade(label="Eye allign error",menu=helpeye)
+helpeye.add_cascade(label="(Affects all mode)")
+helpeye.add_cascade(label="(How accurate you can allign cursor to the eye)")
+helpeye.add_cascade(label="0.03: Monitor pixel perfect")
+helpeye.add_cascade(label="0.3: Minecraft pixel perfect")
+helpeye.add_cascade(label="1: Within center third of the eye")
+helpeye.add_cascade(label="4: Within the eye")
+
+helppixel=tk.Menu(helpbar,tearoff=False)
+helpbar.add_cascade(label="Pixel count error",menu=helppixel)
+helppixel.add_cascade(label="(Affects corner+facing mode)")
+helppixel.add_cascade(label="(How accurate you can measure distance between cursor and vertex)")
+helppixel.add_cascade(label="0.01: Count monitor pixel")
+helppixel.add_cascade(label="0.03: Count minecraft pixel")
+helppixel.add_cascade(label="0.3: Count pixels to nearest integer")
+
+helppf=tk.Menu(helpbar,tearoff=False)
+helpbar.add_cascade(label="Pixel perfect error",menu=helppf)
+helppf.add_cascade(label="(Affects pixel perfect mode)")
+helppf.add_cascade(label="(How accurate you can measure pixel shift)")
+helppf.add_cascade(label="0.03: Count pixel shift to one decimal place")
+helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.42 (2025.12.07.)")
+about.add_cascade(label="Version 2.43 (2026.01.01.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -139,23 +179,13 @@ def open_youtube():
 about.add_cascade(label="Open Github",command=open_github)
 about.add_cascade(label="Open Youtube",command=open_youtube)
 
-about.add_separator()
-hotkeylist=tk.Menu(options,tearoff=False)
-about.add_cascade(label="Hotkeys",menu=hotkeylist)
-hotkeylist.add_cascade(label="[ : Paste coord 1")
-hotkeylist.add_cascade(label="] : Paste coord 2")
-hotkeylist.add_cascade(label="= : Add data")
-hotkeylist.add_cascade(label="F8 : Minimize window")
-hotkeylist.add_cascade(label="F9 : Start mouse tracking")
-hotkeylist.add_cascade(label="F10 : End mouse tracking")
-
 # Error options
 ## Align
 acc_list=[0.03,0.05,0.075,0.1,0.2,0.3,0.4,0.5,0.75,1.0,1.5,2.0,4.0]
 cur_error_angle=tk.DoubleVar()
 cur_error_angle.set(float(default[0]))
 alignerrormenu=tk.Menu(options,tearoff=False)
-options.add_cascade(label="Eye Align Error",menu=alignerrormenu)
+options.add_cascade(label="Eye align error",menu=alignerrormenu)
 for i in range(len(acc_list)):
     alignerrormenu.add_radiobutton(label=acc_list[i],variable=cur_error_angle,value=acc_list[i],command=set_infobar)
 
@@ -164,7 +194,7 @@ pixel_list=[0.01,0.03,0.05,0.075,0.1,0.15,0.2,0.3]
 cur_error_pixel=tk.DoubleVar()
 cur_error_pixel.set(float(default[1]))
 pixelerrormenu=tk.Menu(options,tearoff=False)
-options.add_cascade(label="Pixel Count Error",menu=pixelerrormenu)
+options.add_cascade(label="Pixel count error",menu=pixelerrormenu)
 for i in range(len(pixel_list)):
     pixelerrormenu.add_radiobutton(label=pixel_list[i],variable=cur_error_pixel,value=pixel_list[i],command=set_infobar)
 
@@ -173,9 +203,20 @@ pixel_perfect_list=[0.03,0.06,0.1,0.2,0.3]
 cur_pixel_perfect=tk.DoubleVar()
 cur_pixel_perfect.set(float(default[2]))
 pixelperfectmenu=tk.Menu(options,tearoff=False)
-options.add_cascade(label="Pixel Perfect Error",menu=pixelperfectmenu)
+options.add_cascade(label="Pixel perfect error",menu=pixelperfectmenu)
 for i in range(len(pixel_perfect_list)):
     pixelperfectmenu.add_radiobutton(label=pixel_perfect_list[i],variable=cur_pixel_perfect,value=pixel_perfect_list[i],command=set_infobar)
+
+## Manual Input
+manual_input_list=["Count monitor pixel","Count minecraft pixel","Show coordinate"]
+cur_manual_input=tk.StringVar()
+cur_manual_input.set(manual_input_list[2])
+if cur_manual_input not in manual_input_list:
+    cur_manual_input.set(manual_input_list[2])
+manualinputmenu=tk.Menu(options,tearoff=False)
+options.add_cascade(label="Manual coord input",menu=manualinputmenu)
+for i in range(len(manual_input_list)):
+    manualinputmenu.add_radiobutton(label=manual_input_list[i],variable=cur_manual_input,value=manual_input_list[i],command=set_infobar)
 
 ## Mouse Tracking
 def start_calibration():
@@ -199,9 +240,9 @@ def clear_calibration():
         c2_dis.config(text="Angle: 0 Deg")
 
 mousecalibratemenu=tk.Menu(options,tearoff=False)
-options.add_cascade(label="Mouse Tracking",menu=mousecalibratemenu)
-mousecalibratemenu.add_cascade(label="Add Calibration Data",command=start_calibration)
-mousecalibratemenu.add_cascade(label="Clear Calibration Data",command=clear_calibration)
+options.add_cascade(label="Mouse tracking",menu=mousecalibratemenu)
+mousecalibratemenu.add_cascade(label="Add calibration data",command=start_calibration)
+mousecalibratemenu.add_cascade(label="Clear calibration data",command=clear_calibration)
 mousecalibratemenu.add_cascade(label="Mean: "+f'{default[10]:.1f}')
 mousecalibratemenu.add_cascade(label="SD: "+f'{default[11]:.1f}')
 measuring=0
@@ -279,22 +320,21 @@ cur_input_mode=tk.StringVar()
 cur_input_mode.set(default[3])
 inputmodemenu=tk.Menu(options,tearoff=False)
 options.add_separator()
-options.add_cascade(label="Input Mode",menu=inputmodemenu)
+options.add_cascade(label="Input mode",menu=inputmodemenu)
 inputmodemenu.add_radiobutton(label="Coord+Coord",value="Coord+Coord",variable=cur_input_mode,command=set_mode)
 inputmodemenu.add_radiobutton(label="Corner+Facing",value="Corner+Facing",variable=cur_input_mode,command=set_mode)
-inputmodemenu.add_radiobutton(label="Pixel Perfect",value="Pixel Perfect",variable=cur_input_mode,command=set_mode)
-inputmodemenu.add_radiobutton(label="Mouse Tracking",value="Mouse Tracking",variable=cur_input_mode,command=set_mode)
+inputmodemenu.add_radiobutton(label="Pixel perfect",value="Pixel Perfect",variable=cur_input_mode,command=set_mode)
+inputmodemenu.add_radiobutton(label="Mouse tracking",value="Mouse Tracking",variable=cur_input_mode,command=set_mode)
 
 ## Coordinate
 cur_cinp=tk.StringVar()
 cur_cinp.set(default[4])
 cinpmenu=tk.Menu(options,tearoff=False)
-options.add_cascade(label="Coordinate Input",menu=cinpmenu)
+options.add_cascade(label="Coordinate input",menu=cinpmenu)
 cinpmenu.add_radiobutton(label="Copy+Paste",value="Copy+Paste",variable=cur_cinp,command=set_mode)
-cinpmenu.add_radiobutton(label="Copy+Paste (Corner)",value="Copy+Paste (Corner)",variable=cur_cinp,command=set_mode)
-cinpmenu.add_radiobutton(label="Show Coordinate",value="Show Coordinate",variable=cur_cinp,command=set_mode)
-cinpmenu.add_radiobutton(label="Count Block Pixels",value="Block Pixel",variable=cur_cinp,command=set_mode)
-cinpmenu.add_radiobutton(label="Count Monitor Pixels",value="Monitor Pixel",variable=cur_cinp,command=set_mode)
+cinpmenu.add_radiobutton(label="Copy+Paste (corner)",value="Copy+Paste (Corner)",variable=cur_cinp,command=set_mode)
+cinpmenu.add_radiobutton(label="Show coordinate",value="Show Coordinate",variable=cur_cinp,command=set_mode)
+cinpmenu.add_radiobutton(label="Maunal input",value="Manual Input",variable=cur_cinp,command=set_mode)
 
 ## Mouse Track display
 if default[12]>0:
@@ -312,7 +352,7 @@ cur_pc=tk.IntVar()
 cur_pc.set(int(default[5]))
 pcmenu=tk.Menu(options,tearoff=False)
 options.add_separator()
-options.add_cascade(label="Probability Within",menu=pcmenu)
+options.add_cascade(label="Probability within",menu=pcmenu)
 def set_pc(inp):
     if inp<1:
         pc_lab.config(text="")
@@ -323,15 +363,15 @@ def set_pc(inp):
     else:
         PROB_Label.config(text="PROB")
     display()
-pcmenu.add_radiobutton(label="Village Grid",value=-1,variable=cur_pc,command=partial(set_pc,-1))
+pcmenu.add_radiobutton(label="Village grid",value=-1,variable=cur_pc,command=partial(set_pc,-1))
 pcmenu.add_radiobutton(label="Off",value=0,variable=cur_pc,command=partial(set_pc,0))
 for i in range(2,len(pc_list)):
-    pcmenu.add_radiobutton(label=str(pc_list[i])+" Chunks",value=pc_list[i],variable=cur_pc,command=partial(set_pc,pc_list[i]))
+    pcmenu.add_radiobutton(label=str(pc_list[i])+" chunks",value=pc_list[i],variable=cur_pc,command=partial(set_pc,pc_list[i]))
 
 cur_dismean=tk.StringVar()
 cur_dismean.set(default[6])
 dismeanmenu=tk.Menu(options,tearoff=False)
-options.add_cascade(label="Display Mean",menu=dismeanmenu)
+options.add_cascade(label="Display mean",menu=dismeanmenu)
 def set_dismean():
     display()
 dismeanmenu.add_radiobutton(label="Show",value="Show",variable=cur_dismean,command=set_dismean)
@@ -340,7 +380,7 @@ dismeanmenu.add_radiobutton(label="Hide",value="Hide",variable=cur_dismean,comma
 high_col=tk.IntVar()
 high_col.set(int(default[13]))
 highcolmenu=tk.Menu(options,tearoff=False)
-options.add_cascade(label="Highlight Color",menu=highcolmenu)
+options.add_cascade(label="Highlight color",menu=highcolmenu)
 def set_highcol():
     display()
 highcolmenu.add_radiobutton(label="Red",value=0,variable=high_col,command=set_highcol)
@@ -380,7 +420,7 @@ game_version=tk.StringVar()
 game_version.set(default[7])
 gameversionmenu=tk.Menu(options,tearoff=False)
 options.add_separator()
-options.add_cascade(label="Game Version",menu=gameversionmenu)
+options.add_cascade(label="Game version",menu=gameversionmenu)
 gameversionmenu.add_radiobutton(label="1.21.100+",value="1.21.100+",variable=game_version,command=set_version)
 gameversionmenu.add_radiobutton(label="1.18.30+",value="1.18.30+",variable=game_version,command=set_version)
 gameversionmenu.add_radiobutton(label="Pre 1.18.30",value="Pre 1.18.30",variable=game_version,command=set_version)
@@ -388,20 +428,20 @@ gameversionmenu.add_radiobutton(label="Pre 1.18.30",value="Pre 1.18.30",variable
 cur_prior=tk.StringVar()
 cur_prior.set(default[8])
 priormenu=tk.Menu(options,tearoff=False)
-options.add_cascade(label="Prior Probability",menu=priormenu)
+options.add_cascade(label="Prior probability",menu=priormenu)
 def set_prior():
     load_prob()
     for i in range(len(pt)):
         add_prob(i)
     display()
-priormenu.add_radiobutton(label="Based on Simulation",value="Simulation",variable=cur_prior,command=set_prior)
-priormenu.add_radiobutton(label="Uniform Probability",value="Uniform",variable=cur_prior,command=set_prior)
+priormenu.add_radiobutton(label="Based on simulation",value="Simulation",variable=cur_prior,command=set_prior)
+priormenu.add_radiobutton(label="Uniform probability",value="Uniform",variable=cur_prior,command=set_prior)
 
 # Stronghold within
 cur_within=tk.IntVar()
 cur_within.set(int(default[9]))
 withinmenu=tk.Menu(options,tearoff=False)
-options.add_cascade(label="Stronghold Within",menu=withinmenu)
+options.add_cascade(label="Stronghold within",menu=withinmenu)
 withinmenu.add_radiobutton(label="2000",value=2000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="3000",value=3000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="4000",value=4000,variable=cur_within,command=set_version)
@@ -453,7 +493,7 @@ def set_c2():
     c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
 
 def add_point():
-    global pt, x1, x2, z1, z2, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, track_angle, track_move, sum_abs
+    global pt, x1, x2, z1, z2, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual, track_angle, track_move, sum_abs
     print(x1_inp.get())
     print(z1_inp.get())
     curmode=cur_input_mode.get()
@@ -461,7 +501,7 @@ def add_point():
         cneed=False
     else:
         cneed=True
-    if (cur_cinp.get()=="Block Pixel" or cur_cinp.get()=="Monitor Pixel") and cneed:
+    if cur_cinp.get()=="Manual Input" and cneed:
         try:
             x1=float(x1_inp.get())
             x2=float(x2_inp.get())
@@ -469,12 +509,17 @@ def add_point():
             z2=float(z2_inp.get())
         except:
             x1,x2,z1,z2=0,0,0,0
-    elif (cur_cinp.get()=="Block Pixel" or cur_cinp.get()=="Monitor Pixel"):
+    elif cur_cinp.get()=="Manual Input":
         try:
             x1=float(x1_inp.get())
             z1=float(z1_inp.get())
         except:
             x1,z1=0,0
+    if cur_cinp.get()=="Manual Input" and cur_manual_input.get()=="Show coordinate":
+        x1=x1+0.5
+        x2=x2+0.5
+        z1=z1+0.5
+        z2=z2+0.5
     print([x1,z1,x2,z2])
     if cur_input_mode.get()=="Coord+Coord":
         valid=True
@@ -493,6 +538,7 @@ def add_point():
             pt_coord.insert(0,cur_cinp.get())
             pt_pixel.insert(0,0)
             pt_pixel_err.insert(0,0)
+            pt_manual.insert(0,cur_manual_input.get())
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
             if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
@@ -560,6 +606,7 @@ def add_point():
                 pt_prec.insert(0,cur_error_pixel.get())
                 pt_pixel.insert(0,0)
                 pt_pixel_err.insert(0,0)
+                pt_manual.insert(0,cur_manual_input.get())
                 x1,x2,z1,z2=0,0,0,0
                 if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
                     c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
@@ -593,6 +640,7 @@ def add_point():
             pt_coord.insert(0,cur_cinp.get())
             pt_pixel.insert(0,npixel)
             pt_pixel_err.insert(0,cur_pixel_perfect.get())
+            pt_manual.insert(0,cur_manual_input.get())
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
             pixel_inp.delete(0,tk.END)
@@ -625,6 +673,7 @@ def add_point():
             pt_coord.insert(0,cur_cinp.get())
             pt_pixel.insert(0,0)
             pt_pixel_err.insert(0,cur_pixel_perfect.get())
+            pt_manual.insert(0,cur_manual_input.get())
             listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+str(round(track_angle)))
             x1,x2,z1,z2,track_move,track_angle,sum_abs=0,0,0,0,0,0,0
             if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
@@ -639,7 +688,7 @@ def add_point():
             display()
 
 def del_point():
-    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err
+    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual
     try:
         ind=listdata.curselection()[0]
         listdata.delete(ind)
@@ -650,6 +699,7 @@ def del_point():
         pt_coord.pop(ind)
         pt_pixel.pop(ind)
         pt_pixel_err.pop(ind)
+        pt_manual.pop(ind)
         load_prob()
         for i in range(len(pt)):
             add_prob(i)
@@ -658,7 +708,7 @@ def del_point():
         pass
 
 def clear():
-    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err
+    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual
     pt=[]
     pt_mode=[]
     pt_prec=[]
@@ -666,6 +716,7 @@ def clear():
     pt_coord=[]
     pt_pixel=[]
     pt_pixel_err=[]
+    pt_manual=[]
     listdata.delete(0,tk.END)
     load_prob()
     display()
@@ -853,12 +904,16 @@ def add_prob(n):
         elif pt_coord[n]=="Show Coordinate":
             error_precision=math.atan(1*math.sqrt(2)/dist)*0.25
             error_dist=0.3
-        elif pt_coord[n]=="Block Pixel":
-            error_precision=math.atan(1/16*math.sqrt(2)/dist)*0.25
-            error_dist=0.3/16
         else:
-            error_precision=math.atan(1/16/72*math.sqrt(2)/dist)*0.2
-            error_dist=0.3/1152
+            if pt_manual[n]=="Show coordinate":
+                error_precision=math.atan(0.3*math.sqrt(2)/dist)*0.2
+                error_dist=0.3
+            elif pt_manual[n]=="Count minecraft pixel":
+                error_precision=math.atan(0.01875*math.sqrt(2)/dist)*0.2
+                error_dist=0.01875
+            else:
+                error_precision=math.atan(0.0002*math.sqrt(2)/dist)*0.2
+                error_dist=0.0002
     error_combine=(error_angle**2+error_precision**2)**0.5
     print([error_angle,error_precision,error_combine])
 
@@ -923,11 +978,11 @@ def add_prob(n):
 
         a=x1+0.5
         b=z1+0.5
-        if z1==z2:
-            xeye1=a+143.75**0.5
-            xeye2=a-143.75**0.5
-            zeye1=z1
-            zeye2=z1
+        if new_z1==z2:
+            xeye1=new_x1
+            xeye2=new_x1
+            zeye1=new_z1+143.75**0.5
+            zeye2=new_z1-143.75**0.5
         else:
             p=(x2-x1)/(z2-z1)*-1
             q=new_z1-p*new_x1
