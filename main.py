@@ -976,15 +976,15 @@ def add_prob(n):
         new_x1=x1+vector[0]*shift/dist
         new_z1=z1+vector[1]*shift/dist
 
-        a=x1+0.5
-        b=z1+0.5
+        a=new_x1+0.5
+        b=new_z1+0.5
         if new_z1==z2:
             xeye1=new_x1
             xeye2=new_x1
             zeye1=new_z1+143.75**0.5
             zeye2=new_z1-143.75**0.5
         else:
-            p=(x2-x1)/(z2-z1)*-1
+            p=(x2-new_x1)/(z2-new_z1)*-1
             q=new_z1-p*new_x1
             r=12
 
@@ -996,7 +996,7 @@ def add_prob(n):
             zeye1=p*xeye1+q
             zeye2=p*xeye2+q
 
-        dir_vec=[x2-x1,z2-z1]
+        dir_vec=[x2-new_x1,z2-new_z1]
         dir_vec=[dir_vec[1],dir_vec[0]*-1]
         vec1=(xeye1-a,zeye1-b)
         vec2=(xeye2-a,zeye2-b)
