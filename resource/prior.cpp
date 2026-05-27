@@ -18,7 +18,7 @@ struct Cand{
 };
 
 extern "C" __declspec(dllexport)
-int calculate_prior(int x1, int z1, int str_within, int prev_layout, double* vilprob, int nvilprob, Result* res, double* info){
+int calculate_prior(int x1, int z1, int str_within, int prev_layout, int simul, double* vilprob, int nvilprob, Result* res, double* info){
     int cur_x=x1/16;
     int cur_z=z1/16;
     int ncand=0;
@@ -79,6 +79,13 @@ int calculate_prior(int x1, int z1, int str_within, int prev_layout, double* vil
     sumprob=0;
     for(int i=0 ; i<ncand ; i++){sumprob=sumprob+res[i].prob;}
     for(int i=0 ; i<ncand ; i++){res[i].prob=res[i].prob/sumprob;}
+
+    /* uniform distribution */
+    double uniform_prob=0;
+    if(ncand>0){uniform_prob=1.0/(double)ncand;}
+    if(simul==0){
+        for(int i=0 ; i<ncand ; i++){res[i].prob=uniform_prob;}
+    }
 
     /* calculating info */
     double xvilprob=0;
