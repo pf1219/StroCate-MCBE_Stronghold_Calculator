@@ -7,7 +7,7 @@ from functools import partial
 from bindglobal import BindGlobal as BG
 from pyautogui import screenshot
 from numpy import array, uint8, array_equal
-import sys
+import sys, os, time, ctypes
 
 # Pyinstaller setting
 def path(relative_path):
@@ -20,20 +20,10 @@ def path(relative_path):
 # Import data
 data=list(csv.reader(open(path("pdf.csv"))))
 pdf=[float(data[i][0]) for i in range(len(data))]
-
-data=list(csv.reader(open(path("pre_prob.csv"))))
-chunk_x=[int(data[i][0]) for i in range(len(data))]
-chunk_z=[int(data[i][1]) for i in range(len(data))]
-prob_init=[float(data[i][2]) for i in range(len(data))]
-cand_x=[chunk_x[i]*16+2 for i in range(len(data))]
-cand_z=[chunk_z[i]*16+2 for i in range(len(data))]
-stair_x=[chunk_x[i]*16+4 for i in range(len(data))]
-stair_z=[chunk_z[i]*16+4 for i in range(len(data))]
-net_x=[chunk_x[i]*2 for i in range(len(data))]
-net_z=[chunk_z[i]*2 for i in range(len(data))]
-lencand=len(data)
-
-exec(open(path("screen.py")).read())
+data=list(csv.reader(open(path("vilprob16.csv"))))
+vilprob16=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
+data=list(csv.reader(open(path("vilprob.csv"))))
+vilprob=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
 
 # Import setting
 if "StroCate_setting.csv" in os.listdir():
@@ -57,34 +47,12 @@ pt_pixel_err=[]
 pt_manual=[]
 
 # Functions
-def PDF(x):
-    if x>40:
-        return(0)
-    else:
-        return(pdf[round(x*1000)])
 def disprob(x):
     a=100*x
     return(f'{a:.2f}'+"%")
 def disprob2(x):
     a=100*x
     return(f'{a:.1f}'+"%")
-def cal_angle(x1,x2,z1,z2):
-    xvec=x2-x1
-    zvec=z2-z1
-    diagvec=((zvec**2)+(xvec**2))**0.5
-    if zvec>0:
-        return(math.acos(xvec/diagvec))
-    else:
-        return(2*math.pi-math.acos(xvec/diagvec))
-def vec_angle(vec1,dis1,p3,p4):
-    vec2=[p4[0]-p3[0],p4[1]-p3[1]]
-    denom=vec1[0]*vec2[0]+vec1[1]*vec2[1]
-    nom=dis1*(vec2[0]**2+vec2[1]**2)**0.5
-    if nom==0:
-        return(1000)
-    else:
-        return(math.acos(denom/nom))
-
 def rgb_to_hex(r, g, b):
   return '#{:02X}{:02X}{:02X}'.format(r, g, b)
 
@@ -103,6 +71,17 @@ ft=font.Font(family="Malgun Gothic",size=10)
 ft2=font.Font(family="Malgun Gothic",size=10,underline=True)
 ft_small=font.Font(family="Malgun Gothic",size=8)
 win.option_add("*Font",ft)
+
+# screen reading setup
+class Coords(ctypes.Structure):
+    _fields_=[("x",ctypes.c_int),("y",ctypes.c_int),("z",ctypes.c_int),("valid",ctypes.c_int)]
+dll3=ctypes.CDLL(path("screen.dll"))
+READCOORD=dll3.read_coords
+READCOORD.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.POINTER(ctypes.c_int)]
+READCOORD.restype=Coords
+
+OutputArrayType=ctypes.c_int*100
+debug=OutputArrayType()
 
 # Angle measurement setup
 exec(open(path("mouse_track.py")).read())
@@ -142,6 +121,10 @@ hotkeylist.add_cascade(label="= : Add data")
 hotkeylist.add_cascade(label="F8 : Minimize window")
 hotkeylist.add_cascade(label="F9 : Start mouse tracking")
 hotkeylist.add_cascade(label="F10 : End mouse tracking")
+hotkeylist.add_cascade(label="Shift+P : Pixel shift +0.5")
+hotkeylist.add_cascade(label="Shift+M : Pixel shift -0.5")
+hotkeylist.add_cascade(label="P : Pixel shift +0.1")
+hotkeylist.add_cascade(label="M : Pixel shift -0.1")
 helpbar.add_separator()
 
 helpeye=tk.Menu(helpbar,tearoff=False)
@@ -171,7 +154,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.43 (2026.01.01.)")
+about.add_cascade(label="Version 2.5 (2026.05.27.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -390,27 +373,6 @@ highcolmenu.add_radiobutton(label="Blue",value=2,variable=high_col,command=set_h
 
 # Load data
 def set_version():
-    global chunk_x,chunk_z,prob,cand_x,cand_z,stair_x,stair_z,net_x,net_z,lencand, prob_init
-    if game_version.get()!="Pre 1.18.30":
-        print("1.18.30+")
-        data=list(csv.reader(open(path("pre_prob.csv"))))
-    else:
-        print("Pre 1.18.30")
-        data=list(csv.reader(open(path("pre_prob16.csv"))))
-    distance=[16*((int(data[i][0]))**2+(int(data[i][1]))**2)**0.5 for i in range(len(data))]
-    ind=[i for i in range(len(distance)) if distance[i]<=cur_within.get()]
-    chunk_x=[int(data[i][0]) for i in ind]
-    chunk_z=[int(data[i][1]) for i in ind]
-    prob_init=[float(data[i][2]) for i in ind]
-    lencand=len(chunk_x)
-    cand_x=[chunk_x[i]*16+2 for i in range(lencand)]
-    cand_z=[chunk_z[i]*16+2 for i in range(lencand)]
-    stair_x=[chunk_x[i]*16+4 for i in range(lencand)]
-    stair_z=[chunk_z[i]*16+4 for i in range(lencand)]
-    net_x=[chunk_x[i]*2 for i in range(lencand)]
-    net_z=[chunk_z[i]*2 for i in range(lencand)]
-    print(lencand)
-    load_prob()
     for i in range(len(pt)):
         add_prob(i)
     display()
@@ -431,7 +393,6 @@ cur_prior.set(default[8])
 priormenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Prior probability",menu=priormenu)
 def set_prior():
-    load_prob()
     for i in range(len(pt)):
         add_prob(i)
     display()
@@ -458,11 +419,11 @@ def set_c1():
     global x1, z1, coords
     try:
         if cur_cinp.get()=="Show Coordinate":
-            coords=read_coords()
-            print(coords)
-            if coords!=-1:
-                x1=coords[0]+0.5
-                z1=coords[2]+0.5
+            coords=READCOORD(sw,sh,debug)
+            print([coords.x,coords.y,coords.z,coords.valid])
+            if coords.valid:
+                x1=coords.x+0.5
+                z1=coords.z+0.5
         else:
             inp=pyperclip.paste()
             inp=inp.split(" ")
@@ -479,11 +440,11 @@ def set_c2():
     global x2, z2, coords
     try:
         if cur_cinp.get()=="Show Coordinate":
-            coords=read_coords()
-            print(coords)
-            if coords!=-1:
-                x2=coords[0]+0.5
-                z2=coords[2]+0.5
+            coords=READCOORD(sw,sh,debug)
+            print([coords.x,coords.y,coords.z,coords.valid])
+            if coords.valid:
+                x2=coords.x+0.5
+                z2=coords.z+0.5
         else:
             inp=pyperclip.paste()
             inp=inp.split(" ")
@@ -701,7 +662,6 @@ def del_point():
         pt_pixel.pop(ind)
         pt_pixel_err.pop(ind)
         pt_manual.pop(ind)
-        load_prob()
         for i in range(len(pt)):
             add_prob(i)
         display()
@@ -709,6 +669,7 @@ def del_point():
         pass
 
 def clear():
+    a=time.time()
     global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual
     pt=[]
     pt_mode=[]
@@ -719,7 +680,6 @@ def clear():
     pt_pixel_err=[]
     pt_manual=[]
     listdata.delete(0,tk.END)
-    load_prob()
     display()
 
 def clear_inp(event):
@@ -760,6 +720,62 @@ def key_press3(event):
 bg3=BG()
 bg3.start()
 bg3.gbind("<=>",key_press3)
+
+def key_press7(event):
+    if cur_input_mode.get()=="Pixel Perfect":
+        try:
+            cur_pixel_inp=float(pixel_inp.get())
+            cur_pixel_inp=round(cur_pixel_inp+0.5,1)
+            pixel_inp.delete(0,tk.END)
+            pixel_inp.insert(0,cur_pixel_inp)
+        except:
+            pixel_inp.delete(0,tk.END)
+            pixel_inp.insert(0,"0.5")
+bg7=BG()
+bg7.start()
+bg7.gbind("<P>",key_press7)
+
+def key_press8(event):
+    if cur_input_mode.get()=="Pixel Perfect":
+        try:
+            cur_pixel_inp=float(pixel_inp.get())
+            cur_pixel_inp=max(0,round(cur_pixel_inp-0.5,1))
+            pixel_inp.delete(0,tk.END)
+            pixel_inp.insert(0,cur_pixel_inp)
+        except:
+            pixel_inp.delete(0,tk.END)
+            pixel_inp.insert(0,"0")
+bg8=BG()
+bg8.start()
+bg8.gbind("<M>",key_press8)
+
+def key_press9(event):
+    if cur_input_mode.get()=="Pixel Perfect":
+        try:
+            cur_pixel_inp=float(pixel_inp.get())
+            cur_pixel_inp=round(cur_pixel_inp+0.1,1)
+            pixel_inp.delete(0,tk.END)
+            pixel_inp.insert(0,cur_pixel_inp)
+        except:
+            pixel_inp.delete(0,tk.END)
+            pixel_inp.insert(0,"0.1")
+bg9=BG()
+bg9.start()
+bg9.gbind("<p>",key_press9)
+
+def key_press10(event):
+    if cur_input_mode.get()=="Pixel Perfect":
+        try:
+            cur_pixel_inp=float(pixel_inp.get())
+            cur_pixel_inp=max(0,round(cur_pixel_inp-0.1,1))
+            pixel_inp.delete(0,tk.END)
+            pixel_inp.insert(0,cur_pixel_inp)
+        except:
+            pixel_inp.delete(0,tk.END)
+            pixel_inp.insert(0,"0")
+bg10=BG()
+bg10.start()
+bg10.gbind("<m>",key_press10)
 
 # Mouse track
 sum_move=0
@@ -863,22 +879,78 @@ for i in range(9):
     R.place(x=360,y=102+20*i,anchor=tk.CENTER)
     labels[i].append(R)
 
-# Calculate
-def load_prob():
-    global prob
-    if cur_prior.get()=="Simulation":
-        prob=[[prob_init[i],i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
-    else:
-        prob_common=1/lencand
-        prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
+# output
+class Result(ctypes.Structure):
+    _fields_=[("prob",ctypes.c_double),("ratio",ctypes.c_double),("x",ctypes.c_int),("z",ctypes.c_int)]
 
+# C functions
+dll1=ctypes.CDLL(path("prior.dll"))
+PRIOR=dll1.calculate_prior
+PRIOR.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,
+                ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result)]
+PRIOR.restype=ctypes.c_int
+
+dll2=ctypes.CDLL(path("update.dll"))
+UPDATE=dll2.update_prob
+UPDATE.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,
+                 ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,
+                 ctypes.POINTER(ctypes.c_double)]
+UPDATE.restype=ctypes.c_int
+
+OutputArrayType=ctypes.c_double*10
+info=OutputArrayType()
+
+UPDATEPF=dll2.update_prob_pf
+UPDATEPF.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,
+                 ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int,
+                 ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,
+                   ctypes.POINTER(ctypes.c_double)]
+UPDATEPF.restype=ctypes.c_int
+
+PROBWITHIN=dll2.prob_within
+PROBWITHIN.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int]
+PROBWITHIN.restype=ctypes.c_double
+
+PROBWITHIN2=dll2.prob_within2
+PROBWITHIN2.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int]
+PROBWITHIN2.restype=ctypes.c_double
+
+# precalculated lists
+DoubleArrayType=ctypes.c_double*len(vilprob16)
+a_vilprob16=DoubleArrayType(*vilprob16)
+DoubleArrayType=ctypes.c_double*len(vilprob)
+a_vilprob=DoubleArrayType(*vilprob)
+DoubleArrayType=ctypes.c_double*len(pdf)
+a_pdf=DoubleArrayType(*pdf)
+
+# Calculate
+def calculate_prior(x1,z1):
+    global prob, res, lencand
+    
+    prev_layout=(game_version.get()=="Pre 1.18.30")
+    limit=int(cur_within.get()/16)
+    maxchunk=(limit*2)**2
+    OutputArrayType=Result*maxchunk
+    res=OutputArrayType()
+    
+    if prev_layout:
+        lencand=PRIOR(int(x1),int(z1),limit,1,a_vilprob16,len(vilprob16),res,info)
+    else:
+        lencand=PRIOR(int(x1),int(z1),limit,0,a_vilprob,len(vilprob),res,info)
+    
 def add_prob(n):
-    global prob
+    global prob, res, lencand
     x1=pt[n][0]
     z1=pt[n][1]
     x2=pt[n][2]
     z2=pt[n][3]
 
+    # prior probability
+    if len(pt)==1:
+        calculate_prior(x1,z1)
+        print("PRIOR")
+
+    # estimating error
     dist=((x1-x2)**2+(z1-z2)**2)**0.5
     error_precision=-1000
     if game_version.get()=="1.21.100+":
@@ -918,188 +990,38 @@ def add_prob(n):
     error_combine=(error_angle**2+error_precision**2)**0.5
     print([error_angle,error_precision,error_combine])
 
-    # Coord+Coord
+    # update
     if pt_mode[n]=="Coord+Coord" or pt_mode[n]=="Corner+Facing":
-        # Line
-        a=x1+0.5
-        b=z1+0.5
-        if x1==x2:
-            xeye1=x1
-            xeye2=x1
-            zeye1=b+143.75**0.5
-            zeye2=b-143.75**0.5
-        else:
-            p=(z2-z1)/(x2-x1)
-            q=z1-p*x1
-            r=12
-
-            denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r
-            denom2=a+b*p-p*q
-            nom=p*p+1
-            xeye1=(denom1**0.5+denom2)/nom
-            xeye2=(-1*denom1**0.5+denom2)/nom
-            zeye1=p*xeye1+q
-            zeye2=p*xeye2+q
-
-        dir_vec=(x2-x1,z2-z1)
-        vec1=(xeye1-a,zeye1-b)
-        vec2=(xeye2-a,zeye2-b)
-        cos1=dir_vec[0]*vec1[0]+dir_vec[1]*vec1[1]
-        cos2=dir_vec[0]*vec2[0]+dir_vec[1]*vec2[1]
-        if cos1>cos2:
-            xeye=xeye1
-            zeye=zeye1
-        else:
-            xeye=xeye2
-            zeye=zeye2
-
-        vec_eye=[xeye-a,zeye-b]
-        print(vec_eye)
-        vec_dist=(vec_eye[0]**2+vec_eye[1]**2)**0.5
-        angle_dif=[vec_angle(vec_eye,vec_dist,[a,b],[prob[i][2],prob[i][3]]) for i in range(len(prob))]
-        new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine) for i in range(len(prob))]
-        prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
-        sumprob=sum(prob[i][0] for i in range(len(prob)))
-        if sumprob>0:
-            for i in range(len(prob)):
-                prob[i][0]=prob[i][0]/sumprob
-        else:
-            prob_common=1/lencand
-            prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
+        lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
     elif pt_mode[n]=="Pixel Perfect":
-        # Pixel Perfect
-        if game_version.get()=="1.21.100+":
-            shift=0.196
-        else:
-            shift=0.4032
-        print(shift)
-        vector=[x2-x1,z2-z1]
-        new_x1=x1+vector[0]*shift/dist
-        new_z1=z1+vector[1]*shift/dist
-
-        a=new_x1+0.5
-        b=new_z1+0.5
-        if new_z1==z2:
-            xeye1=new_x1
-            xeye2=new_x1
-            zeye1=new_z1+143.75**0.5
-            zeye2=new_z1-143.75**0.5
-        else:
-            p=(x2-new_x1)/(z2-new_z1)*-1
-            q=new_z1-p*new_x1
-            r=12
-
-            denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r
-            denom2=a+b*p-p*q
-            nom=p*p+1
-            xeye1=(denom1**0.5+denom2)/nom
-            xeye2=(-1*denom1**0.5+denom2)/nom
-            zeye1=p*xeye1+q
-            zeye2=p*xeye2+q
-
-        dir_vec=[x2-new_x1,z2-new_z1]
-        dir_vec=[dir_vec[1],dir_vec[0]*-1]
-        vec1=(xeye1-a,zeye1-b)
-        vec2=(xeye2-a,zeye2-b)
-        cos1=dir_vec[0]*vec1[0]+dir_vec[1]*vec1[1]
-        cos2=dir_vec[0]*vec2[0]+dir_vec[1]*vec2[1]
-        if cos1>cos2:
-            xeye=xeye1
-            zeye=zeye1
-        else:
-            xeye=xeye2
-            zeye=zeye2
-
-        vec_eye=[xeye-a,zeye-b]
-        vec_dist=(vec_eye[0]**2+vec_eye[1]**2)**0.5
-        angle_dif=[vec_angle(vec_eye,vec_dist,[a,b],[prob[i][2],prob[i][3]]) for i in range(len(prob))]
-        new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine) for i in range(len(prob))]
-        prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
-        sumprob=sum(prob[i][0] for i in range(len(prob)))
-        if sumprob>0:
-            for i in range(len(prob)):
-                prob[i][0]=prob[i][0]/sumprob
-        else:
-            prob_common=1/lencand
-            prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
-
-        pf=pt_pixel[n]
-        if game_version.get()=="1.21.100+":
-            error_coef=pf/15.604
-        else:
-            error_coef=pf/47.739
-        error_measurement=pt_pixel_err[n]
-        error_dist2=pf*error_dist/dist
-        error_pf=(error_coef**2+error_measurement**2+error_dist2**2)**0.5
-        if game_version.get()=="1.21.100+":
-            k=dist*391.857
-        else:
-            k=dist*185.468
-        cand_pf=[k/((prob[i][2]-a)**2+(prob[i][3]-b)**2)**0.5 for i in range(len(prob))]
-        pf_dif=[abs(cand_pf[i]-pf) for i in range(len(prob))]
-        new_prob=[prob[i][0]*PDF(pf_dif[i]/error_pf) for i in range(len(prob))]
-        prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
-        sumprob=sum(prob[i][0] for i in range(len(prob)))
-        if sumprob>0:
-            for i in range(len(prob)):
-                prob[i][0]=prob[i][0]/sumprob
-        else:
-            prob_common=1/lencand
-            prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
+        newver=int(game_version.get()=="1.21.100+")
+        lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n],error_dist,newver,a_pdf,len(pdf),res,lencand,info)
     elif pt_mode[n]=="Mouse Tracking":
-        # Mouse tracking
         x2=x1+math.cos(pt[n][2]/pt[n][3]*math.pi/2)*10
         z2=z1+math.sin(pt[n][2]/pt[n][3]*math.pi/2)*10
-        a=x1+0.5
-        b=z1+0.5
-        if x1==x2:
-            xeye1=x1
-            xeye2=x1
-            zeye1=b+143.75**0.5
-            zeye2=b-143.75**0.5
-        else:
-            p=(z2-z1)/(x2-x1)
-            q=z1-p*x1
-            r=12
+        lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
 
-            denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r
-            denom2=a+b*p-p*q
-            nom=p*p+1
-            xeye1=(denom1**0.5+denom2)/nom
-            xeye2=(-1*denom1**0.5+denom2)/nom
-            zeye1=p*xeye1+q
-            zeye2=p*xeye2+q
-
-        dir_vec=(x2-x1,z2-z1)
-        vec1=(xeye1-a,zeye1-b)
-        vec2=(xeye2-a,zeye2-b)
-        cos1=dir_vec[0]*vec1[0]+dir_vec[1]*vec1[1]
-        cos2=dir_vec[0]*vec2[0]+dir_vec[1]*vec2[1]
-        if cos1>cos2:
-            xeye=xeye1
-            zeye=zeye1
-        else:
-            xeye=xeye2
-            zeye=zeye2
-
-        vec_eye=[xeye-a,zeye-b]
-        print(vec_eye)
-        vec_dist=(vec_eye[0]**2+vec_eye[1]**2)**0.5
-        angle_dif=[vec_angle(vec_eye,vec_dist,[a,b],[prob[i][2],prob[i][3]]) for i in range(len(prob))]
-        new_prob=[prob[i][0]*PDF(angle_dif[i]/error_combine)**0.5 for i in range(len(prob))]
-        prob=[[new_prob[i],prob[i][1],prob[i][2],prob[i][3]] for i in range(len(prob)) if new_prob[i]>0]
-        sumprob=sum(prob[i][0] for i in range(len(prob)))
-        if sumprob>0:
-            for i in range(len(prob)):
-                prob[i][0]=prob[i][0]/sumprob
-        else:
-            prob_common=1/lencand
-            prob=[[prob_common,i,cand_x[i],cand_z[i]] for i in range(len(cand_x))]
-
+    print(info[:3])
+        
 def display():
+    a=time.time()
     global prob, prob_dis
     cur_pc_value=cur_pc.get()
-    pc2=(cur_pc_value*16)**2
+    pc2=int((cur_pc_value*16)**2)
+    pc2_chunk=int(cur_pc_value**2)
+
+    # initial state
+    if len(pt)==0:
+        for i in range(len(labels)):
+            for j in range(4):
+                labels[i][j].config(text="")
+        return()
+
+    # number of display
+    if cur_dismean.get()=="Show":
+        ndis=min(8,lencand)
+    else:
+        ndis=min(9,lencand)
 
     # Village grid
     if cur_pc_value==-1:
@@ -1107,36 +1029,39 @@ def display():
             vil_grid=[]
             vil_list=[]
             vil_prob_list=[]
-            for i in range(-8,8):
-                for j in range(-8,8):
+            cur_grid=[int(pt[0][0]/16/34),int(pt[0][2]/16/34)]
+            min_limit=[cur_grid[0]-8,cur_grid[1]-8]
+            for i in range(cur_grid[0]-8,cur_grid[0]+8):
+                for j in range(cur_grid[1]-8,cur_grid[1]+8):
                     vil_grid.append([i,j])
                     vil_list.append([])
                     vil_prob_list.append([])
-            for i in range(len(prob)):
-                k=prob[i][1]
-                if chunk_x[k]%34<28 and chunk_z[k]%34<28:
-                    xgrid=chunk_x[k]//34
-                    zgrid=chunk_z[k]//34
-                    grid_ind=(xgrid+8)*16+(zgrid+8)
-                    vil_list[grid_ind].append(k)
-                    vil_prob_list[grid_ind].append(prob[i][0])
+            for i in range(lencand):
+                if (res[i].x)%34<28 and (res[i].z)%34<28:
+                    xgrid=(res[i].x)//34
+                    zgrid=(res[i].z)//34
+                    grid_ind=(xgrid-min_limit[0])*16+(zgrid-min_limit[1])
+                    vil_list[grid_ind].append(i)
+                    vil_prob_list[grid_ind].append(res[i].prob)
         else:
             vil_grid=[]
             vil_list=[]
             vil_prob_list=[]
-            for i in range(-10,10):
-                for j in range(-10,10):
+            cur_grid=[int(pt[0][0]/16/27),int(pt[0][2]/16/27)]
+            min_limit=[cur_grid[0]-10,cur_grid[1]-10]
+            for i in range(cur_grid[0]-10,cur_grid[0]+10):
+                for j in range(cur_grid[1]-10,cur_grid[1]+10):
                     vil_grid.append([i,j])
                     vil_list.append([])
                     vil_prob_list.append([])
             for i in range(len(prob)):
                 k=prob[i][1]
-                if chunk_x[k]%27<18 and chunk_z[k]%27<18:
-                    xgrid=chunk_x[k]//27
-                    zgrid=chunk_z[k]//27
-                    grid_ind=(xgrid+10)*20+(zgrid+10)
-                    vil_list[grid_ind].append(k)
-                    vil_prob_list[grid_ind].append(prob[i][0])
+                if (res[i].x)%27<18 and (res[i].z)%27<18:
+                    xgrid=(res[i].x)//27
+                    zgrid=(res[i].z)//27
+                    grid_ind=(xgrid-min_limit[0])*16+(zgrid-min_limit[1])
+                    vil_list[grid_ind].append(i)
+                    vil_prob_list[grid_ind].append(res[i].prob)
         prob_dis=[]
         for i in range(len(vil_grid)):
             grid_len=len(vil_prob_list[i])
@@ -1144,33 +1069,22 @@ def display():
                 k=[]
                 grid_prob=sum(vil_prob_list[i])
                 k.append(grid_prob)
-                grid_x=round(sum(stair_x[vil_list[i][j]]*vil_prob_list[i][j] for j in range(grid_len))/grid_prob)
-                grid_z=round(sum(stair_z[vil_list[i][j]]*vil_prob_list[i][j] for j in range(grid_len))/grid_prob)
+                grid_x=round(sum((res[vil_list[i][j]].x*16+2)*vil_prob_list[i][j] for j in range(grid_len))/grid_prob)
+                grid_z=round(sum((res[vil_list[i][j]].z*16+2)*vil_prob_list[i][j] for j in range(grid_len))/grid_prob)
                 k=k+[grid_x,grid_z,grid_x//8,grid_z//8,vil_grid[i][0],vil_grid[i][1]]
                 prob_dis.append(k)
+        prob_dis=heapq.nlargest(ndis,prob_dis)
     else:
         prob_dis=[]
-        for i in range(len(prob)):
-            k=prob[i][1]
-            prob_dis.append([prob[i][0],prob[i][1],stair_x[k],stair_z[k],net_x[k],net_z[k]])
+        for i in range(ndis):
+            prob_dis.append([res[i].prob,i,res[i].x*16+4,res[i].z*16+4,res[i].x*8,res[i].z*8])
 
-    # Sort
-    if cur_dismean.get()=="Show":
-        ndis=min(8,len(prob_dis))
-    else:
-        ndis=min(9,len(prob_dis))
-    prob_dis=heapq.nlargest(ndis,prob_dis)
-
+    # prob within
     if cur_pc_value>0:
         prob2=[]
         for i in range(ndis):
-            j=prob_dis[i][1]
-            p2=0
-            for l in range(len(prob)):
-                if (cand_x[j]-prob[l][2])**2+(cand_z[j]-prob[l][3])**2 < pc2:
-                    p2=p2+prob[l][0]
-            prob2.append(p2)
-
+            prob2.append(PROBWITHIN(res[i].x,res[i].z,pc2_chunk,res,lencand))
+    
     # Display
     for i in range(9):
         for j in range(4):
@@ -1183,8 +1097,8 @@ def display():
             k=prob_dis[i][0]
         else:
             j=prob_dis[i][1]
-            labels[i][0].config(text="("+str(stair_x[j])+","+str(stair_z[j])+")")
-            labels[i][1].config(text="("+str(net_x[j])+","+str(net_z[j])+")")
+            labels[i][0].config(text="("+str(prob_dis[i][2]+2)+","+str(prob_dis[i][3]+2)+")")
+            labels[i][1].config(text="("+str((prob_dis[i][2]//8))+","+str((prob_dis[i][3]//8))+")")
             k=prob_dis[i][0]
             
         if k<0.05:
@@ -1211,19 +1125,19 @@ def display():
             labels[i][3].config(text="")
 
     if cur_dismean.get()=="Show":
-        mean_x=round(sum(prob[l][2]*prob[l][0] for l in range(len(prob))))+2
-        mean_z=round(sum(prob[l][3]*prob[l][0] for l in range(len(prob))))+2
-        mean_net_x=mean_x//8
-        mean_net_z=mean_z//8
+        if len(pt)==0:
+            mean_x,mean_z,mean_net_x,mean_net_z=0,0,0,0
+        else:
+            mean_x=round(info[1])+2
+            mean_z=round(info[2])+2
+            mean_net_x=mean_x//8
+            mean_net_z=mean_z//8
         labels[8][0].config(text="("+str(mean_x)+","+str(mean_z)+")")
         labels[8][1].config(text="("+str(mean_net_x)+","+str(mean_net_z)+")")
         labels[8][2].config(text="Mean")
 
         if cur_pc_value>0:
-            p2=0
-            for l in range(len(prob)):
-                if (prob[l][2]-mean_x)**2+(prob[l][3]-mean_z)**2 < pc2:
-                    p2=p2+prob[l][0]
+            p2=PROBWITHIN2(mean_x,mean_z,pc2,res,lencand)
             col_code=[0,0,0]
             col_code[high_col.get()]=math.floor(255*p2)
             labels[8][3].config(text=disprob2(p2),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
@@ -1246,8 +1160,6 @@ else:
     pc_lab=tk.Label(win,text="")
 pc_lab.place(x=360,y=83,anchor=tk.CENTER)
 set_version()
-load_prob()
-display()
 
 # Close
 def close():
@@ -1268,9 +1180,22 @@ def close():
     a.writerow(new_default)
     f.close()
 
+    # Undo keybind
+    bg.stop()
+    bg2.stop()
+    bg3.stop()
+    bg4.stop()
+    bg5.stop()
+    bg6.stop()
+    bg7.stop()
+    bg8.stop()
+    bg9.stop()
+    bg10.stop()
+
     # Close window
+    win.quit()
     win.destroy()
-    sys.exit()
+    os._exit(0)
 win.protocol("WM_DELETE_WINDOW",close)
 
 # Display
