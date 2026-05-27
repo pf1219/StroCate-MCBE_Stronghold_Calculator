@@ -886,7 +886,7 @@ class Result(ctypes.Structure):
 # C functions
 dll1=ctypes.CDLL(path("prior.dll"))
 PRIOR=dll1.calculate_prior
-PRIOR.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,
+PRIOR.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,
                 ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result)]
 PRIOR.restype=ctypes.c_int
 
@@ -932,11 +932,14 @@ def calculate_prior(x1,z1):
     maxchunk=(limit*2)**2
     OutputArrayType=Result*maxchunk
     res=OutputArrayType()
+
+    based_on_simul=int(cur_prior.get()=="Simulation")
+    print(based_on_simul)
     
     if prev_layout:
-        lencand=PRIOR(int(x1),int(z1),limit,1,a_vilprob16,len(vilprob16),res,info)
+        lencand=PRIOR(int(x1),int(z1),limit,1,based_on_simul,a_vilprob16,len(vilprob16),res,info)
     else:
-        lencand=PRIOR(int(x1),int(z1),limit,0,a_vilprob,len(vilprob),res,info)
+        lencand=PRIOR(int(x1),int(z1),limit,0,based_on_simul,a_vilprob,len(vilprob),res,info)
     
 def add_prob(n):
     global prob, res, lencand
@@ -1097,7 +1100,7 @@ def display():
             k=prob_dis[i][0]
         else:
             j=prob_dis[i][1]
-            labels[i][0].config(text="("+str(prob_dis[i][2]+2)+","+str(prob_dis[i][3]+2)+")")
+            labels[i][0].config(text="("+str(prob_dis[i][2])+","+str(prob_dis[i][3])+")")
             labels[i][1].config(text="("+str((prob_dis[i][2]//8))+","+str((prob_dis[i][3]//8))+")")
             k=prob_dis[i][0]
             
