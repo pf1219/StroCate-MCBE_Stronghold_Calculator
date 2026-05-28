@@ -25,11 +25,16 @@ vilprob16=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
 data=list(csv.reader(open(path("vilprob.csv"))))
 vilprob=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
 
+data=list(csv.reader(open(path("distprob.csv"))))
+distprob=[float(data[i][0]) for i in range(len(data))]
+data=list(csv.reader(open(path("distprob16.csv"))))
+distprob16=[float(data[i][0]) for i in range(len(data))]
+
 # Import setting
 if "StroCate_setting.csv" in os.listdir():
     default=list(csv.reader(open("StroCate_setting.csv")))[0]
 else:
-    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","4000",0,0,0,0,"Show coordinate"]
+    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","6000",0,0,0,0,"Show coordinate"]
 while len(default)<14:
     default.append(0)
 for i in range(10,14):
@@ -80,8 +85,14 @@ READCOORD=dll3.read_coords
 READCOORD.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.POINTER(ctypes.c_int)]
 READCOORD.restype=Coords
 
+BTCALC=dll3.calculate_bt
+BTCALC.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.POINTER(ctypes.c_int)]
+BTCALC.restype=ctypes.c_int
+
 OutputArrayType=ctypes.c_int*100
 debug=OutputArrayType()
+OutputArrayType=ctypes.c_int*6
+btres=OutputArrayType()
 
 # Angle measurement setup
 exec(open(path("mouse_track.py")).read())
@@ -125,6 +136,9 @@ hotkeylist.add_cascade(label="Shift+P : Pixel shift +0.5")
 hotkeylist.add_cascade(label="Shift+M : Pixel shift -0.5")
 hotkeylist.add_cascade(label="P : Pixel shift +0.1")
 hotkeylist.add_cascade(label="M : Pixel shift -0.1")
+hotkeylist.add_cascade(label="C×2 : Stronghold dig spot")
+hotkeylist.add_cascade(label="V×2 : Buried treasure dig spot")
+hotkeylist.add_cascade(label="X×2 : Hide dig spot")
 helpbar.add_separator()
 
 helpeye=tk.Menu(helpbar,tearoff=False)
@@ -154,7 +168,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.5 (2026.05.27.)")
+about.add_cascade(label="Version 2.51 (2026.05.28.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -407,6 +421,7 @@ options.add_cascade(label="Stronghold within",menu=withinmenu)
 withinmenu.add_radiobutton(label="2000",value=2000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="3000",value=3000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="4000",value=4000,variable=cur_within,command=set_version)
+withinmenu.add_radiobutton(label="6000",value=6000,variable=cur_within,command=set_version)
 
 # Initialize infobar
 calibrating=0
@@ -420,11 +435,11 @@ def set_c1():
     try:
         if cur_cinp.get()=="Show Coordinate":
             coords=READCOORD(sw,sh,debug)
-            print([coords.x,coords.y,coords.z,coords.valid])
+            print(["screen reader",coords.x,coords.y,coords.z,coords.valid])
             if coords.valid:
                 x1=coords.x+0.5
                 z1=coords.z+0.5
-        else:
+        elif cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Copy+Paste":
             inp=pyperclip.paste()
             inp=inp.split(" ")
             x1=float(inp[0])
@@ -434,30 +449,30 @@ def set_c1():
                     x1,z1=0,0
     except:
         x2,z2=0,0
-    c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
+    if cur_cinp.get()!="Manual Input":
+        c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
 
 def set_c2():
     global x2, z2, coords
     try:
         if cur_cinp.get()=="Show Coordinate":
             coords=READCOORD(sw,sh,debug)
-            print([coords.x,coords.y,coords.z,coords.valid])
+            print(["screen reader",coords.x,coords.y,coords.z,coords.valid])
             if coords.valid:
                 x2=coords.x+0.5
                 z2=coords.z+0.5
-        else:
+        elif cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Copy+Paste":
             inp=pyperclip.paste()
             inp=inp.split(" ")
             x2=float(inp[0])
             z2=float(inp[2])
     except:
         x2,z2=0,0
-    c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
+    if cur_cinp.get()!="Manual Input":
+        c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
 
 def add_point():
     global pt, x1, x2, z1, z2, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual, track_angle, track_move, sum_abs
-    print(x1_inp.get())
-    print(z1_inp.get())
     curmode=cur_input_mode.get()
     if curmode=="Corner+Facing" or curmode=="Mouse Tracking":
         cneed=False
@@ -482,7 +497,7 @@ def add_point():
         x2=x2+0.5
         z1=z1+0.5
         z2=z2+0.5
-    print([x1,z1,x2,z2])
+    print(["added",x1,z1,x2,z2])
     if cur_input_mode.get()=="Coord+Coord":
         valid=True
         if cur_cinp.get()=="Copy+Paste (Corner)":
@@ -626,9 +641,8 @@ def add_point():
             else:
                 valid=False
         if valid:
-            print([x1,z1])
             pt.insert(0,[x1,z1,track_move,default[10],default[11],sum_abs])
-            print([track_move,sum_abs])
+            print(["mouse track",track_move,sum_abs])
             pt_mode.insert(0,cur_input_mode.get())
             pt_err.insert(0,cur_error_angle.get())
             pt_prec.insert(0,0)
@@ -777,6 +791,67 @@ bg10=BG()
 bg10.start()
 bg10.gbind("<m>",key_press10)
 
+def key_press11(event):
+    coords=READCOORD(sw,sh,debug)
+    if coords.valid:
+        x=coords.x
+        z=coords.z
+        cx=x//16
+        cz=z//16
+        
+        digcand=[]
+        for i in range(cx-1,cx+2):
+            for j in range(cz-1,cz+2):
+                candx=i*16+4
+                candz=j*16+4
+                digcand.append([(candx-x)**2+(candz-z)**2,candx,candz])
+        digcand=sorted(digcand)
+        
+        digx=digcand[0][1]
+        digz=digcand[0][2]
+        dx=digx-x
+        dz=digz-z
+        labels[8][0].config(text="({},{})".format(digx,digz))
+        
+        if dx>0:
+            sign1="+"
+        elif dx==0:
+            sign1="0"
+        else:
+            sign1="-"
+        if dz>0:
+            sign2="+"
+        elif dz==0:
+            sign2="0"
+        else:
+            sign2="-"
+            
+        labels[8][1].config(text="( {} , {} )".format(sign1,sign2))
+        labels[8][2].config(text="SH Dig")
+        labels[8][3].config(text="")
+bg11=BG()
+bg11.start()
+bg11.gbind("<Double-KeyRelease-c>",key_press11)
+
+def key_press12(event):
+    coords=READCOORD(sw,sh,debug)
+    if coords.valid:
+        BTCALC(coords.x,coords.z,btres)
+        labels[8][0].config(text="({},{})".format(btres[0],btres[1]))
+        labels[8][1].config(text="({},{})".format(btres[2],btres[3]))
+        labels[8][2].config(text="({},{})".format(btres[4],btres[5]))
+        labels[8][3].config(text="BT Dig")
+bg12=BG()
+bg12.start()
+bg12.gbind("<Double-KeyRelease-v>",key_press12)
+
+def key_press13(event):
+    display()
+bg13=BG()
+bg13.start()
+bg13.gbind("<Double-KeyRelease-x>",key_press13)
+
+
 # Mouse track
 sum_move=0
 sum_abs=0
@@ -887,7 +962,8 @@ class Result(ctypes.Structure):
 dll1=ctypes.CDLL(path("prior.dll"))
 PRIOR=dll1.calculate_prior
 PRIOR.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,
-                ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result)]
+                ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result),
+                ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.c_int]
 PRIOR.restype=ctypes.c_int
 
 dll2=ctypes.CDLL(path("update.dll"))
@@ -923,6 +999,11 @@ a_vilprob=DoubleArrayType(*vilprob)
 DoubleArrayType=ctypes.c_double*len(pdf)
 a_pdf=DoubleArrayType(*pdf)
 
+DoubleArrayType=ctypes.c_double*len(distprob)
+a_distprob=DoubleArrayType(*distprob)
+DoubleArrayType=ctypes.c_double*len(distprob16)
+a_distprob16=DoubleArrayType(*distprob16)
+
 # Calculate
 def calculate_prior(x1,z1):
     global prob, res, lencand
@@ -934,14 +1015,14 @@ def calculate_prior(x1,z1):
     res=OutputArrayType()
 
     based_on_simul=int(cur_prior.get()=="Simulation")
-    print(based_on_simul)
     
     if prev_layout:
-        lencand=PRIOR(int(x1),int(z1),limit,1,based_on_simul,a_vilprob16,len(vilprob16),res,info)
+        lencand=PRIOR(int(x1),int(z1),limit,1,based_on_simul,a_vilprob16,len(vilprob16),res,info,a_distprob16,len(distprob16))
     else:
-        lencand=PRIOR(int(x1),int(z1),limit,0,based_on_simul,a_vilprob,len(vilprob),res,info)
+        lencand=PRIOR(int(x1),int(z1),limit,0,based_on_simul,a_vilprob,len(vilprob),res,info,a_distprob,len(distprob))
     
 def add_prob(n):
+    start_time=time.time()
     global prob, res, lencand
     x1=pt[n][0]
     z1=pt[n][1]
@@ -991,7 +1072,7 @@ def add_prob(n):
                 error_precision=math.atan(0.0002*math.sqrt(2)/dist)*0.2
                 error_dist=0.0002
     error_combine=(error_angle**2+error_precision**2)**0.5
-    print([error_angle,error_precision,error_combine])
+    print(["error",error_angle,error_precision,error_combine])
 
     # update
     if pt_mode[n]=="Coord+Coord" or pt_mode[n]=="Corner+Facing":
@@ -1004,11 +1085,17 @@ def add_prob(n):
         z2=z1+math.sin(pt[n][2]/pt[n][3]*math.pi/2)*10
         lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
 
-    print(info[:3])
+    end_time=time.time()
+    print(n)
+    print(["time spent",end_time-start_time])
+    print(["info"]+info[:3])
         
 def display():
     a=time.time()
     global prob, prob_dis
+    show_stronghold_dig=0
+    show_bt_dig=0
+    
     cur_pc_value=cur_pc.get()
     pc2=int((cur_pc_value*16)**2)
     pc2_chunk=int(cur_pc_value**2)
@@ -1131,8 +1218,8 @@ def display():
         if len(pt)==0:
             mean_x,mean_z,mean_net_x,mean_net_z=0,0,0,0
         else:
-            mean_x=round(info[1])+2
-            mean_z=round(info[2])+2
+            mean_x=round(info[1])
+            mean_z=round(info[2])
             mean_net_x=mean_x//8
             mean_net_z=mean_z//8
         labels[8][0].config(text="("+str(mean_x)+","+str(mean_z)+")")
@@ -1166,13 +1253,6 @@ set_version()
 
 # Close
 def close():
-    # Stop global binding
-    bg.stop()
-    bg2.stop()
-    bg3.stop()
-    bg4.stop()
-    bg5.stop()
-
     # Save setting
     new_default=[str(cur_error_angle.get()),str(cur_error_pixel.get()),str(cur_pixel_perfect.get())]
     new_default=new_default+[cur_input_mode.get(),cur_cinp.get(),str(cur_pc.get()),cur_dismean.get()]
@@ -1194,6 +1274,7 @@ def close():
     bg8.stop()
     bg9.stop()
     bg10.stop()
+    bg11.stop()
 
     # Close window
     win.quit()
