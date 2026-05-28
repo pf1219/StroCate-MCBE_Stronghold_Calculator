@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 using namespace std;
 
 struct Coords{
@@ -104,4 +105,36 @@ Coords read_coords(int swidth, int sheight, int* debug){
     DeleteDC(hMemoryDC);
     ReleaseDC(NULL, hScreen);
     return(result);
+}
+
+extern "C" __declspec(dllexport)
+int calculate_bt(int x, int z, int* btres){
+    int cx=x/16;
+    int cz=z/16;
+    int ncand=0;
+
+    vector<Coords> cand_list;
+    for(int i=cx-5 ; i<(cx+6) ; i++){
+        for(int j=cz-5 ; j<(cz+6) ; j++){
+            if((i%4==0 || i%4==1) && (j%4==0 || j%4==1)){
+                int candx=i*16+8;
+                int candz=j*16+8;
+                int dist=(candx-x)*(candx-x)+(candz-z)*(candz-z);
+                Coords cur_cand = {candx,dist,candz,1};
+                cand_list.push_back(cur_cand);
+                ncand=ncand+1;
+            }
+        }
+    }
+
+    sort(cand_list.begin(), cand_list.end(), [](const Coords& a, const Coords& b) {
+        return a.y < b.y;
+    });
+    btres[0]=cand_list[0].x;
+    btres[1]=cand_list[0].z;
+    btres[2]=cand_list[1].x;
+    btres[3]=cand_list[1].z;
+    btres[4]=cand_list[2].x;
+    btres[5]=cand_list[2].z;
+    return(ncand);
 }
