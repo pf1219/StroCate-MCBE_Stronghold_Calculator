@@ -1209,7 +1209,7 @@ def calculate_prior(x1,z1):
     
 def add_prob(n):
     start_time=time.time()
-    global res, lencand, res2
+    global res, lencand
     x1=pt[n][0]
     z1=pt[n][1]
     x2=pt[n][2]
@@ -1233,6 +1233,7 @@ def add_prob(n):
         error_precision=math.atan(pt_prec[n]/16/0.3)
         error_dist=0
     elif pt_mode[n]=="Mouse Tracking":
+        error_prec1=math.pi/2/pt[n][3]*0.3
         k=min(0.05,max(0.02,pt[n][4]/pt[n][3]))
         error_prec2=k/(2**0.5)*pt[n][5]/pt[n][3]*math.pi/2
         error_precision=(error_prec1**2+error_prec2**2)**0.5
@@ -1263,10 +1264,10 @@ def add_prob(n):
     if pt_mode[n]=="Coord+Coord" or pt_mode[n]=="Corner+Facing":
         lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
     elif pt_mode[n]=="Pixel Perfect":
-        print([x1,z1,x2,z2])
+        print(lencand)
         newver=int(game_version.get()=="1.21.100+")
         lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n],error_dist,newver,a_pdf,len(pdf),res,lencand,info)
-        print(info[0])
+        print(lencand)
     elif pt_mode[n]=="Mouse Tracking":
         x2=x1+math.cos(pt[n][2]/pt[n][3]*math.pi/2)*10
         z2=z1+math.sin(pt[n][2]/pt[n][3]*math.pi/2)*10
