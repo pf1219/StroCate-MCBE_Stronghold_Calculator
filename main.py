@@ -159,7 +159,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.7 (2026.05.30.)")
+about.add_cascade(label="Version 2.71 (2026.05.30.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -1192,7 +1192,7 @@ a_distprob16=DoubleArrayType(*distprob16)
 
 # Calculate
 def calculate_prior(x1,z1):
-    global prob, res, lencand
+    global res, lencand
     
     prev_layout=(game_version.get()=="Pre 1.18.30")
     limit=int(cur_within.get()/16)
@@ -1209,7 +1209,7 @@ def calculate_prior(x1,z1):
     
 def add_prob(n):
     start_time=time.time()
-    global prob, res, lencand
+    global res, lencand, res2
     x1=pt[n][0]
     z1=pt[n][1]
     x2=pt[n][2]
@@ -1233,7 +1233,6 @@ def add_prob(n):
         error_precision=math.atan(pt_prec[n]/16/0.3)
         error_dist=0
     elif pt_mode[n]=="Mouse Tracking":
-        error_prec1=math.pi/2/pt[n][3]*0.3
         k=min(0.05,max(0.02,pt[n][4]/pt[n][3]))
         error_prec2=k/(2**0.5)*pt[n][5]/pt[n][3]*math.pi/2
         error_precision=(error_prec1**2+error_prec2**2)**0.5
@@ -1264,8 +1263,10 @@ def add_prob(n):
     if pt_mode[n]=="Coord+Coord" or pt_mode[n]=="Corner+Facing":
         lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
     elif pt_mode[n]=="Pixel Perfect":
+        print([x1,z1,x2,z2])
         newver=int(game_version.get()=="1.21.100+")
         lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n],error_dist,newver,a_pdf,len(pdf),res,lencand,info)
+        print(info[0])
     elif pt_mode[n]=="Mouse Tracking":
         x2=x1+math.cos(pt[n][2]/pt[n][3]*math.pi/2)*10
         z2=z1+math.sin(pt[n][2]/pt[n][3]*math.pi/2)*10
@@ -1278,7 +1279,7 @@ def add_prob(n):
         
 def display():
     a=time.time()
-    global prob, prob_dis
+    global prob_dis
     show_stronghold_dig=0
     show_bt_dig=0
     
@@ -1330,8 +1331,7 @@ def display():
                     vil_grid.append([i,j])
                     vil_list.append([])
                     vil_prob_list.append([])
-            for i in range(len(prob)):
-                k=prob[i][1]
+            for i in range(lencand):
                 if (res[i].x)%27<18 and (res[i].z)%27<18:
                     xgrid=(res[i].x)//27
                     zgrid=(res[i].z)//27
