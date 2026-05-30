@@ -7,7 +7,7 @@ from functools import partial
 from bindglobal import BindGlobal as BG
 from pyautogui import screenshot
 from numpy import array, uint8, array_equal
-import sys, os, time, ctypes
+import sys, os, time, ctypes, string
 
 # Pyinstaller setting
 def path(relative_path):
@@ -41,6 +41,10 @@ for i in range(10,14):
     default[i]=float(default[i])
 if len(default)<15:
     default.append("Show coordinate")
+if len(default)<16:
+    default=default+["[","]","=","F9","F10","F8","s p","s m","p","m","d c","d v","d x","d n","d m"]
+if len(default)<29:
+    default=default+["d n","d m"]
 
 pt=[]
 pt_mode=[]
@@ -82,7 +86,7 @@ class Coords(ctypes.Structure):
     _fields_=[("x",ctypes.c_int),("y",ctypes.c_int),("z",ctypes.c_int),("valid",ctypes.c_int)]
 dll3=ctypes.CDLL(path("screen.dll"))
 READCOORD=dll3.read_coords
-READCOORD.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.POINTER(ctypes.c_int)]
+READCOORD.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.c_int]
 READCOORD.restype=Coords
 
 BTCALC=dll3.calculate_bt
@@ -126,19 +130,6 @@ menubar.add_cascade(label="About",menu=about)
 # Help
 hotkeylist=tk.Menu(helpbar,tearoff=False)
 helpbar.add_cascade(label="Hotkeys",menu=hotkeylist)
-hotkeylist.add_cascade(label="[ : Paste coord 1")
-hotkeylist.add_cascade(label="] : Paste coord 2")
-hotkeylist.add_cascade(label="= : Add data")
-hotkeylist.add_cascade(label="F8 : Minimize window")
-hotkeylist.add_cascade(label="F9 : Start mouse tracking")
-hotkeylist.add_cascade(label="F10 : End mouse tracking")
-hotkeylist.add_cascade(label="Shift+P : Pixel shift +0.5")
-hotkeylist.add_cascade(label="Shift+M : Pixel shift -0.5")
-hotkeylist.add_cascade(label="P : Pixel shift +0.1")
-hotkeylist.add_cascade(label="M : Pixel shift -0.1")
-hotkeylist.add_cascade(label="C×2 : Stronghold dig spot")
-hotkeylist.add_cascade(label="V×2 : Buried treasure dig spot")
-hotkeylist.add_cascade(label="X×2 : Hide dig spot")
 helpbar.add_separator()
 
 helpeye=tk.Menu(helpbar,tearoff=False)
@@ -168,7 +159,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.51 (2026.05.28.)")
+about.add_cascade(label="Version 2.7 (2026.05.30.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -260,6 +251,9 @@ def set_mode():
     pixel_inp.place_forget()
     pixel_dis.place_forget()
     track_dis.place_forget()
+    c1_dis.place(x=5,y=7)
+    c2_dis.place(x=5,y=37)
+    add_but.place(x=265,y=19)
     if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
         c1_but.place(x=200,y=5)
         c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
@@ -434,7 +428,7 @@ def set_c1():
     global x1, z1, coords
     try:
         if cur_cinp.get()=="Show Coordinate":
-            coords=READCOORD(sw,sh,debug)
+            coords=READCOORD(sw,sh,debug,0)
             print(["screen reader",coords.x,coords.y,coords.z,coords.valid])
             if coords.valid:
                 x1=coords.x+0.5
@@ -456,7 +450,7 @@ def set_c2():
     global x2, z2, coords
     try:
         if cur_cinp.get()=="Show Coordinate":
-            coords=READCOORD(sw,sh,debug)
+            coords=READCOORD(sw,sh,debug,0)
             print(["screen reader",coords.x,coords.y,coords.z,coords.valid])
             if coords.valid:
                 x2=coords.x+0.5
@@ -718,22 +712,22 @@ pixel_dis=tk.Label(win,text="Pixel")
 # Hotkey
 def key_press1(event):
     set_c1()
-bg=BG()
-bg.start()
-bg.gbind("<[>",key_press1)
+#bg1=BG()
+#bg1.start()
+#bg1.gbind("<[>",key_press1)
 
 def key_press2(event):
     if cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
         set_c2()
-bg2=BG()
-bg2.start()
-bg2.gbind("<]>",key_press2)
+#bg2=BG()
+#bg2.start()
+#bg2.gbind("<]>",key_press2)
 
 def key_press3(event):
     add_point()
-bg3=BG()
-bg3.start()
-bg3.gbind("<=>",key_press3)
+#bg3=BG()
+#bg3.start()
+#bg3.gbind("<=>",key_press3)
 
 def key_press7(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -745,9 +739,9 @@ def key_press7(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0.5")
-bg7=BG()
-bg7.start()
-bg7.gbind("<P>",key_press7)
+#bg7=BG()
+#bg7.start()
+#bg7.gbind("<P>",key_press7)
 
 def key_press8(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -759,9 +753,9 @@ def key_press8(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0")
-bg8=BG()
-bg8.start()
-bg8.gbind("<M>",key_press8)
+#bg8=BG()
+#bg8.start()
+#bg8.gbind("<M>",key_press8)
 
 def key_press9(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -773,9 +767,9 @@ def key_press9(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0.1")
-bg9=BG()
-bg9.start()
-bg9.gbind("<p>",key_press9)
+#bg9=BG()
+#bg9.start()
+#bg9.gbind("<p>",key_press9)
 
 def key_press10(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -787,12 +781,13 @@ def key_press10(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0")
-bg10=BG()
-bg10.start()
-bg10.gbind("<m>",key_press10)
+#bg10=BG()
+#bg10.start()
+#bg10.gbind("<m>",key_press10)
 
+# Dig spot
 def key_press11(event):
-    coords=READCOORD(sw,sh,debug)
+    coords=READCOORD(sw,sh,debug,0)
     if coords.valid:
         x=coords.x
         z=coords.z
@@ -829,30 +824,46 @@ def key_press11(event):
         labels[8][1].config(text="( {} , {} )".format(sign1,sign2))
         labels[8][2].config(text="SH Dig")
         labels[8][3].config(text="")
-bg11=BG()
-bg11.start()
-bg11.gbind("<Double-KeyRelease-c>",key_press11)
+#bg11=BG()
+#bg11.start()
+#bg11.gbind("<Double-KeyRelease-c>",key_press11)
 
 def key_press12(event):
-    coords=READCOORD(sw,sh,debug)
+    coords=READCOORD(sw,sh,debug,0)
     if coords.valid:
         BTCALC(coords.x,coords.z,btres)
         labels[8][0].config(text="({},{})".format(btres[0],btres[1]))
         labels[8][1].config(text="({},{})".format(btres[2],btres[3]))
         labels[8][2].config(text="({},{})".format(btres[4],btres[5]))
         labels[8][3].config(text="BT Dig")
-bg12=BG()
-bg12.start()
-bg12.gbind("<Double-KeyRelease-v>",key_press12)
+#bg12=BG()
+#bg12.start()
+#bg12.gbind("<Double-KeyRelease-v>",key_press12)
 
 def key_press13(event):
     display()
-bg13=BG()
-bg13.start()
-bg13.gbind("<Double-KeyRelease-x>",key_press13)
+    
+# bg13=BG()
+# bg13.start()
+# bg13.gbind("<Double-KeyRelease-x>",key_press13)
 
+saved_coord=[0,0,0]
+def key_press14(event):
+    global saved_coord
+    coords=READCOORD(sw,sh,debug,1)
+    if coords.valid:
+        saved_coord=[coords.x,coords.y,coords.z]
+    labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]))
+    labels[8][1].config(text="")
+    labels[8][2].config(text="Saved Coord")
+    labels[8][3].config(text="")
+def key_press15(event):
+    labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]))
+    labels[8][1].config(text="")
+    labels[8][2].config(text="Saved Coord")
+    labels[8][3].config(text="")
 
-# Mouse track
+# Mouse tracking
 sum_move=0
 sum_abs=0
 def start_track():
@@ -870,9 +881,9 @@ def start_track():
         measuring=2
 def key_press4(event):
     start_track()
-bg4=BG()
-bg4.start()
-bg4.gbind("<F9>",key_press4)
+#bg4=BG()
+#bg4.start()
+#bg4.gbind("<F9>",key_press4)
 
 def stop_track():
     global sum_move, default, calibrating, track_angle, measuring, track_move, sum_abs
@@ -903,12 +914,9 @@ def stop_track():
         track_dis.config(text="Face pos X, Press F9")
 def key_press5(event):
     stop_track()
-bg5=BG()
-bg5.start()
-bg5.gbind("<F10>",key_press5)
-
-add_but=tk.Button(win,text="ADD",command=add_point,padx=8,pady=3)
-add_but.place(x=265,y=19)
+#bg5=BG()
+#bg5.start()
+#bg5.gbind("<F10>",key_press5)
 
 # Iconify
 def key_press6(event):
@@ -916,11 +924,189 @@ def key_press6(event):
         win.state("normal")
     else:
         win.state("iconic")
-bg6=BG()
-bg6.start()
-bg6.gbind("<F8>",key_press6)
+#bg6=BG()
+#bg6.start()
+#bg6.gbind("<F8>",key_press6)
+
+# Keybind help
+hotkey_desc=["Paste coord 1","Paste coord 2","Add data","Start mouse tracking","End mouse tracking","Minimize window",
+             "Pixel shift +0.5","Pixel shift -0.5","Pixel shift +0.1","Pixel shift -0.1","Stronghold dig spot",
+             "Buried treasure dig spot","Hide dig spot","Save coordinate","Display saved coordinate"]
+def keybind_help():
+    nhelp=hotkeylist.index("end")
+    if isinstance(nhelp,int):
+        for i in range(nhelp):
+            hotkeylist.delete(0,nhelp-1)
+    for i in range(len(hotkey_desc)):
+        curkey=default[15+i].split(" ")
+        if len(curkey)==1:
+            curkeycode=curkey[0].upper()
+        else:
+            curkey[1]=curkey[1].upper()
+            if curkey[0]=="s":
+                curkeycode="Shift+"+curkey[1]
+            elif curkey[0]=="d":
+                curkeycode=curkey[1]+"×2"
+            else:
+                curkeycode=curkey[1]
+        hotkeylist.add_cascade(label="{}: {}".format(curkeycode,hotkey_desc[i]))
+keybind_help()
+
+# Keybind
+key_press=[]
+for i in range(len(hotkey_desc)):
+    exec("key_press.append(key_press{})".format(i+1))
+
+bindglobal=[]
+def applyhotkey():
+    global bindglobal
+    bindglobal=[]
+    for i in range(len(hotkey_desc)):
+        bg=BG()
+        bindglobal.append(bg)
+    for i in range(len(hotkey_desc)):
+        bindglobal[i].start()
+        curkey=default[15+i].split(" ")
+        curkeycode=""
+        if len(curkey)==1:
+            curkeycode=curkey[0]
+        else:
+            if curkey[0]=="s":
+                if curkey[1] in string.ascii_lowercase:
+                    curkeycode=curkey[1].upper()
+                else:
+                    curkeycode="Shift-"+curkey[1]
+            elif curkey[0]=="d":
+                curkeycode="Double-KeyRelease-"+curkey[1]
+        bindglobal[i].gbind("<{}>".format(curkeycode),key_press[i])
+applyhotkey()
+
+# Valid keybind
+valid_key=[]
+valid_code=[]
+valid_mod=[]
+for i in range(10):
+    valid_key.append(str(i))
+    valid_code.append(48+i)
+    valid_mod.append(0)
+for i in range(26):
+    valid_key.append(string.ascii_lowercase[i])
+    valid_code.append(65+i)
+    valid_mod.append(1)
+for i in range(10):
+    valid_key.append("F"+str(i+1))
+    valid_code.append(112+i)
+    valid_mod.append(1)
+    
+valid_key=valid_key+["F12","[","]",";","'",",",".","/","-","="]
+valid_code=valid_code+[123,219,221,186,222,188,190,191,189,187]
+valid_mod=valid_mod+[0]*10
+
+# Change keybind
+curkey=""
+def changehotkey():
+    global curkey
+    print("CHANGE HOTKEY")
+    # unplace
+    c1_but.place_forget()
+    c2_but.place_forget()
+    x1_inp.place_forget()
+    x2_inp.place_forget()
+    z1_inp.place_forget()
+    z2_inp.place_forget()
+    facing_dir.place_forget()
+    pixel_inp.place_forget()
+    pixel_dis.place_forget()
+    track_dis.place_forget()
+    c1_dis.place_forget()
+    c2_dis.place_forget()
+    add_but.place_forget()
+    
+    for i in range(13):
+        bindglobal[i].stop()
+
+    changehotkeylist.place(x=15,y=10)
+    changehotkeylist.set("Hotkey action")
+    changehotkeymod.place(x=15,y=40)
+    changehotkeymod.set("Modifier")
+    changehotkeylabel.place(x=100,y=40)
+    changehotkeylabel.config(text="Key: "+curkey)
+    changehotkeybut.place(x=190,y=22)
+    changehotkeyreset.place(x=250,y=22)
+    changehotkeyreturn.place(x=310,y=22)
+    win.bind("<Key>",hotkeylisten)
+    curkey=""
+    
+def hotkeylisten(event):
+    global curkey
+    print(event.keycode)
+    if event.keycode in valid_code:
+        curmod=changehotkeymod.get()
+        valid=True
+        if curmod=="Shift" and valid_mod[valid_code.index(event.keycode)]==0:
+            valid=False
+
+        if valid:
+            curkey=valid_key[valid_code.index(event.keycode)]
+            changehotkeylabel.config(text="Key: "+curkey)
+
+def hotkeychange():
+    print("CHANGE")
+    global default, curkey
+    if curkey=="" or changehotkeylist.get()=="Hotkey action":
+        return()
+    keyind=hotkey_desc.index(changehotkeylist.get())
+    if changehotkeymod.get()=="Shift":
+        new_code="s "+curkey
+    elif changehotkeymod.get()=="Double":
+        new_code="d "+curkey
+    else:
+        new_code=curkey
+
+    if new_code not in default[15:(15+len(hotkey_desc))]:
+        default[15+keyind]=new_code
+        keybind_help()
+        changehotkeylist.set("Hotkey action")
+        changehotkeymod.set("Modifier")
+        curkey=""
+        changehotkeylabel.config(text="Key: "+curkey)
+
+def hotkeyreset():
+    global default
+    default_hotkey=["[","]","=","F9","F10","F8","s p","s m","p","m","d c","d v","d x"]
+    for i in range(len(hotkey_desc)):
+        default[15+i]=default_hotkey[i]
+        keybind_help()
+        changehotkeylist.set("Hotkey action")
+        changehotkeymod.set("Modifier")
+        curkey=""
+        changehotkeylabel.config(text="Key: "+curkey)
+
+def returncalc():
+    changehotkeylist.place_forget()
+    changehotkeymod.place_forget()
+    changehotkeylabel.place_forget()
+    changehotkeybut.place_forget()
+    changehotkeyreturn.place_forget()
+    changehotkeyreset.place_forget()
+    win.unbind("<Key>")
+    applyhotkey()
+    set_mode()
+    
+options.add_separator()
+options.add_command(label="Change hotkeys",command=changehotkey)
+changehotkeylist=ttk.Combobox(win,values=hotkey_desc,width=20,state="readonly")
+changehotkeylist.set("Hotkey action")
+changehotkeymod=ttk.Combobox(win,values=["None","Shift","Double"],width=8,state="readonly")
+changehotkeymod.set("Modifier")
+changehotkeylabel=tk.Label(text="Key: "+curkey)
+changehotkeybut=tk.Button(text="APPLY",padx=3,pady=2,command=hotkeychange)
+changehotkeyreturn=tk.Button(text="RETURN",padx=3,pady=2,command=returncalc)
+changehotkeyreset=tk.Button(text="RESET",padx=3,pady=2,command=hotkeyreset)
 
 # Input Coordinate
+add_but=tk.Button(win,text="ADD",command=add_point,padx=8,pady=3)
+add_but.place(x=265,y=19)
 x1_inp=tk.Entry(win,width=8)
 z1_inp=tk.Entry(win,width=8)
 x2_inp=tk.Entry(win,width=8)
@@ -1245,7 +1431,7 @@ else:
     PROB_Label.config(text="PROB")
         
 if cur_pc.get()>0:
-    pc_lab=tk.Label(win,text="<"+str(12)+"C")
+    pc_lab=tk.Label(win,text="≤"+str(12)+"C")
 else:
     pc_lab=tk.Label(win,text="")
 pc_lab.place(x=360,y=83,anchor=tk.CENTER)
@@ -1258,23 +1444,15 @@ def close():
     new_default=new_default+[cur_input_mode.get(),cur_cinp.get(),str(cur_pc.get()),cur_dismean.get()]
     new_default=new_default+[game_version.get(),cur_prior.get(),str(cur_within.get())]
     new_default=new_default+[str(default[10]),str(default[11]),str(default[12]),str(default[13])]
+    new_default=new_default+default[14:]
     f=open("StroCate_setting.csv","w")
     a=csv.writer(f)
     a.writerow(new_default)
     f.close()
 
     # Undo keybind
-    bg.stop()
-    bg2.stop()
-    bg3.stop()
-    bg4.stop()
-    bg5.stop()
-    bg6.stop()
-    bg7.stop()
-    bg8.stop()
-    bg9.stop()
-    bg10.stop()
-    bg11.stop()
+    for i in range(len(hotkey_desc)):
+        bindglobal[i].stop()
 
     # Close window
     win.quit()
