@@ -138,8 +138,12 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
         error_coef=pixel/47.739;
         kdist=dist*185.468;
     }
+    info[3]=(x2-x1)*(x2-x1)+(z2-z1)*(z2-z1);
+    info[4]=dist;
+    info[5]=kdist;
     double error_dist2=pixel*error_dist/dist;
     double error_pf=sqrt(error_coef*error_coef+error_dist2*error_dist2+error_pfmeasure*error_pfmeasure);
+    info[6]=error_pf;
 
     double xvec1=x2-x1;
     double zvec1=z2-z1;
@@ -215,6 +219,7 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
         double xpixel=kdist/sqrt((posx-a)*(posx-a)+(posz-b)*(posz-b));
         int Z2=round(1000*abs(xpixel-pixel)/error_pf);
         if(Z2<npdf){likelihood=likelihood*PDF[Z2];}
+        else{likelihood=0;}
 
         if(likelihood>0){
             ncand=ncand+1;
