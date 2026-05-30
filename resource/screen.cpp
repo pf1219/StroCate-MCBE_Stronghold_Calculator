@@ -12,7 +12,7 @@ struct Coords{
 };
 
 extern "C" __declspec(dllexport)
-Coords read_coords(int swidth, int sheight, int* debug){
+Coords read_coords(int swidth, int sheight, int* debug, int nether){
     Coords result={0,0,0,0};
     vector<int> coords={0,0,0};
 
@@ -48,7 +48,14 @@ Coords read_coords(int swidth, int sheight, int* debug){
     for(int y=30 ; y<height ; y++){
         for(int x=8 ; x<width ; x++){
             int ind=(y*width+x)*4;
-            if(pixels[ind]==255 && pixels[ind+1]==255 & pixels[ind+2]==255){
+            int white=0;
+            if(nether){
+                if(pixels[ind]>180 && pixels[ind+1]>180 && pixels[ind+2]>180 && pixels[ind]==pixels[ind+1] && pixels[ind+1]==pixels[ind+2]){white=1;}
+            }
+            else{
+                if(pixels[ind]==255 && pixels[ind+1]==255 & pixels[ind+2]==255){white=1;}
+            }
+            if(white){
                 if(start_x==0){
                     start_x=x;
                     start_y=y;
@@ -61,6 +68,9 @@ Coords read_coords(int swidth, int sheight, int* debug){
         if(streak>=4){break;}
     }
 
+    debug[0]=start_x;
+    debug[1]=start_y;
+
     if(streak>=4){
         int scale=streak/4;
         start_x=start_x+scale*44;
@@ -70,7 +80,14 @@ Coords read_coords(int swidth, int sheight, int* debug){
                 cM=cM*2;
                 int current_y=start_y+dy*scale;
                 int ind=(current_y*width+start_x)*4;
-                if(pixels[ind]==255 && pixels[ind+1]==255 & pixels[ind+2]==255){cM=cM+1;}
+                int white=0;
+                if(nether){
+                    if(pixels[ind]>180 && pixels[ind+1]>180 && pixels[ind+2]>180 && pixels[ind]==pixels[ind+1] && pixels[ind+1]==pixels[ind+2]){white=1;}
+                }
+                else{
+                    if(pixels[ind]==255 && pixels[ind+1]==255 & pixels[ind+2]==255){white=1;}
+                }
+                if(white){cM=cM+1;}
             }
             int digit=-1;
             if(cM==62){digit=0;}
