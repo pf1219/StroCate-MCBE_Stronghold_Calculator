@@ -90,26 +90,21 @@ int update_prob(double x1, double z1, double x2, double z2, double error, double
 
     double sumprob=0;
     for(int i=0 ; i<ncand ; i++){sumprob=sumprob+new_res[i].prob;}
+    info[3]=sumprob;
 
     if(sumprob>0){
+        double xvilprob=0, xmean=0, zmean=0;
         for(int i=0 ; i<ncand ; i++){
             res[i].prob=new_res[i].prob/sumprob;
             res[i].ratio=new_res[i].ratio;
             res[i].x=new_res[i].x;
             res[i].z=new_res[i].z;
-        }
-
-        /* calculating info */
-        double xvilprob=0;
-        for(int i=0 ; i<ncand ; i++){xvilprob=xvilprob+res[i].prob*res[i].ratio;}
-        info[0]=xvilprob;
-
-        double xmean=0;
-        double zmean=0;
-        for(int i=0 ; i<ncand ; i++){
+            xvilprob=xvilprob+res[i].prob*res[i].ratio;
             xmean=xmean+(res[i].x*16+4)*res[i].prob;
             zmean=zmean+(res[i].z*16+4)*res[i].prob;
         }
+
+        info[0]=xvilprob;
         info[1]=xmean;
         info[2]=zmean;
 
@@ -144,6 +139,9 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
     double error_dist2=pixel*error_dist/dist;
     double error_pf=sqrt(error_coef*error_coef+error_dist2*error_dist2+error_pfmeasure*error_pfmeasure);
     info[6]=error_pf;
+    info[7]=error_coef;
+    info[8]=error_dist2;
+    info[9]=error_pfmeasure;
 
     double xvec1=x2-x1;
     double zvec1=z2-z1;
@@ -234,26 +232,21 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
 
     double sumprob=0;
     for(int i=0 ; i<ncand ; i++){sumprob=sumprob+new_res[i].prob;}
+    info[3]=sumprob;
 
     if(sumprob>0){
+        double xvilprob=0, xmean=0, zmean=0;
         for(int i=0 ; i<ncand ; i++){
             res[i].prob=new_res[i].prob/sumprob;
             res[i].ratio=new_res[i].ratio;
             res[i].x=new_res[i].x;
             res[i].z=new_res[i].z;
-        }
-
-        /* calculating info */
-        double xvilprob=0;
-        for(int i=0 ; i<ncand ; i++){xvilprob=xvilprob+res[i].prob*res[i].ratio;}
-        info[0]=xvilprob;
-
-        double xmean=0;
-        double zmean=0;
-        for(int i=0 ; i<ncand ; i++){
+            xvilprob=xvilprob+res[i].prob*res[i].ratio;
             xmean=xmean+(res[i].x*16+4)*res[i].prob;
             zmean=zmean+(res[i].z*16+4)*res[i].prob;
         }
+
+        info[0]=xvilprob;
         info[1]=xmean;
         info[2]=zmean;
 
@@ -286,4 +279,58 @@ double prob_within2(int x, int z, int pc, Result* res, int lencand){
         if(dist <= pc){prob=prob+res[i].prob;}
     }
     return(prob);
+}
+
+extern "C" __declspec(dllexport)
+int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, int ncand, Result* gridres){
+    int grid_x;
+    int grid_z;
+    if(prev_layout){
+        grid_x=int(x/16/27);
+        grid_z=int(z/16/27);
+    }
+    else{
+        grid_x=int(x/16/34);
+        grid_z=int(z/16/34);
+    }
+    int size=(grid_within*2+1);
+    int size2=size*size;
+    int minx=grid_x-grid_within;
+    int minz=grid_z-grid_within;
+
+    vector<double> prob(size2,0);
+    vector<double> xmean(size2,0);
+    vector<double> zmean(size2,0);
+
+    for(int i=0 ; i<ncand ; i++){
+        if(prev_layout){
+            int curx=res[i].x;
+            int curz=res[i].z;
+            if(((curx%27)+27)%27<=17 && ((curz%27)+27)%27<=17){
+                int curgridx=curx/27-minx;
+                int curgridz=curz/27-minz;
+                int ind=curgridx*size+curgridz;
+                prob[ind] += res[i].prob;
+                xmean[ind] += res[i].prob*(curx*16+4);
+                zmean[ind] += res[i].prob*(curz*16+4);
+            }
+        }
+    }
+
+    int ngrid=0;
+    for(int i=0 ; i<size2 ; i++){
+        if(prob[i]>0){
+            gridres[ngrid].prob=prob[i];
+            gridres[ngrid].x=xmean[i]/prob[i];
+            gridres[ngrid].z=zmean[i]/prob[i];
+            gridres[ngrid].ratio=1;
+            ngrid=ngrid+1;
+        }
+    }
+
+    sort(gridres, gridres+ngrid, [](const Result& a, const Result& b) {
+        return a.prob > b.prob;
+    });
+
+    return(ngrid);
 }
