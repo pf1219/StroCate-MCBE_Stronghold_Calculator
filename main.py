@@ -15,19 +15,19 @@ def path(relative_path):
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.dirname(__file__)
-    return os.path.join(base_path, "resource/"+relative_path)
+    return os.path.join(base_path,relative_path)
 
 # Import data
-data=list(csv.reader(open(path("pdf.csv"))))
+data=list(csv.reader(open(path("resource/pdf.csv"))))
 pdf=[float(data[i][0]) for i in range(len(data))]
-data=list(csv.reader(open(path("vilprob16.csv"))))
+data=list(csv.reader(open(path("resource/vilprob16.csv"))))
 vilprob16=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
-data=list(csv.reader(open(path("vilprob.csv"))))
+data=list(csv.reader(open(path("resource/vilprob.csv"))))
 vilprob=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
 
-data=list(csv.reader(open(path("distprob.csv"))))
+data=list(csv.reader(open(path("resource/distprob.csv"))))
 distprob=[float(data[i][0]) for i in range(len(data))]
-data=list(csv.reader(open(path("distprob16.csv"))))
+data=list(csv.reader(open(path("resource/distprob16.csv"))))
 distprob16=[float(data[i][0]) for i in range(len(data))]
 
 # Import setting
@@ -39,12 +39,13 @@ while len(default)<14:
     default.append(0)
 for i in range(10,14):
     default[i]=float(default[i])
+default_hotkey=["[","]","=","F9","F10","F8","s p","s m","p","m","d c","d v","d x","d n","d m","s i"]
+
 if len(default)<15:
     default.append("Show coordinate")
-if len(default)<16:
-    default=default+["[","]","=","F9","F10","F8","s p","s m","p","m","d c","d v","d x","d n","d m"]
-if len(default)<29:
-    default=default+["d n","d m"]
+for i in range(len(default_hotkey)):
+    if len(default)<(16+i):
+        default.append(default_hotkey[i])
 
 pt=[]
 pt_mode=[]
@@ -75,7 +76,7 @@ move_y=sh-340
 win.geometry("400x320+"+str(move_x)+"+30")
 win.resizable(False,False)
 win.attributes("-topmost",True)
-win.iconbitmap(path("icon.ico"))
+win.iconbitmap(path("resource/icon.ico"))
 ft=font.Font(family="Malgun Gothic",size=10)
 ft2=font.Font(family="Malgun Gothic",size=10,underline=True)
 ft_small=font.Font(family="Malgun Gothic",size=8)
@@ -84,7 +85,7 @@ win.option_add("*Font",ft)
 # screen reading setup
 class Coords(ctypes.Structure):
     _fields_=[("x",ctypes.c_int),("y",ctypes.c_int),("z",ctypes.c_int),("valid",ctypes.c_int)]
-dll3=ctypes.CDLL(path("screen.dll"))
+dll3=ctypes.CDLL(path("resource/screen.dll"))
 READCOORD=dll3.read_coords
 READCOORD.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.c_int]
 READCOORD.restype=Coords
@@ -99,7 +100,7 @@ OutputArrayType=ctypes.c_int*6
 btres=OutputArrayType()
 
 # Angle measurement setup
-exec(open(path("mouse_track.py")).read())
+exec(open(path("resource/mouse_track.py")).read())
 
 # Info bar
 def set_infobar():
@@ -159,7 +160,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.71 (2026.05.30.)")
+about.add_cascade(label="Version 2.72 (2026.06.04.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -240,7 +241,7 @@ track_angle=0
 # Input options
 ## Mode
 def set_mode():
-    global x1,x2,z1,z2, measuring, track_move, track_angle
+    global x1,x2,z1,z2, measuring, track_move, track_angle, calibrating
     c1_but.place_forget()
     c2_but.place_forget()
     x1_inp.place_forget()
@@ -254,6 +255,8 @@ def set_mode():
     c1_dis.place(x=5,y=7)
     c2_dis.place(x=5,y=37)
     add_but.place(x=265,y=19)
+    calibrating=0
+    set_infobar()
     if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
         c1_but.place(x=200,y=5)
         c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
@@ -313,6 +316,7 @@ cur_input_mode.set(default[3])
 inputmodemenu=tk.Menu(options,tearoff=False)
 options.add_separator()
 options.add_cascade(label="Input mode",menu=inputmodemenu)
+input_mode_list=["Coord+Coord","Corner+Facing","Pixel Perfect","Mouse Tracking"]
 inputmodemenu.add_radiobutton(label="Coord+Coord",value="Coord+Coord",variable=cur_input_mode,command=set_mode)
 inputmodemenu.add_radiobutton(label="Corner+Facing",value="Corner+Facing",variable=cur_input_mode,command=set_mode)
 inputmodemenu.add_radiobutton(label="Pixel perfect",value="Pixel Perfect",variable=cur_input_mode,command=set_mode)
@@ -374,10 +378,16 @@ high_col.set(int(default[13]))
 highcolmenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Highlight color",menu=highcolmenu)
 def set_highcol():
+    global max_col
+    max_col=highcol_list[high_col.get()]
+    default[13]=high_col.get()
     display()
-highcolmenu.add_radiobutton(label="Red",value=0,variable=high_col,command=set_highcol)
-highcolmenu.add_radiobutton(label="Green",value=1,variable=high_col,command=set_highcol)
-highcolmenu.add_radiobutton(label="Blue",value=2,variable=high_col,command=set_highcol)
+highcol_list=[[255,0,0],[0,255,0],[0,0,255],[0,127,127],[127,0,127],[127,127,0],
+              [191,64,0],[0,64,191],[64,0,191],[191,0,64]]
+higicol_name=["Red","Green","Blue","Cyan","Magenta","Yellow","Orange","Azure","Violet","Rose"]
+max_col=highcol_list[high_col.get()]
+for i in range(len(highcol_list)):
+    highcolmenu.add_radiobutton(label=higicol_name[i],value=i,variable=high_col,command=set_highcol)
 
 # Load data
 def set_version():
@@ -416,6 +426,8 @@ withinmenu.add_radiobutton(label="2000",value=2000,variable=cur_within,command=s
 withinmenu.add_radiobutton(label="3000",value=3000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="4000",value=4000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="6000",value=6000,variable=cur_within,command=set_version)
+withinmenu.add_radiobutton(label="10000",value=10000,variable=cur_within,command=set_version)
+
 
 # Initialize infobar
 calibrating=0
@@ -689,6 +701,11 @@ def clear():
     pt_manual=[]
     listdata.delete(0,tk.END)
     display()
+    # x1_inp.delete(0,tk.END)
+    # x2_inp.delete(0,tk.END)
+    # z1_inp.delete(0,tk.END)
+    # z2_inp.delete(0,tk.END)
+    # pixel_inp.delete(0,tk.END)
 
 def clear_inp(event):
     pixel_inp.delete(0,tk.END)
@@ -821,8 +838,8 @@ def key_press11(event):
         else:
             sign2="-"
             
-        labels[8][1].config(text="( {} , {} )".format(sign1,sign2))
-        labels[8][2].config(text="SH Dig")
+        labels[8][1].config(text="( {} , {} )".format(sign1,sign2),fg="#000000")
+        labels[8][2].config(text="SH Dig",fg="#000000")
         labels[8][3].config(text="")
 #bg11=BG()
 #bg11.start()
@@ -832,10 +849,10 @@ def key_press12(event):
     coords=READCOORD(sw,sh,debug,0)
     if coords.valid:
         BTCALC(coords.x,coords.z,btres)
-        labels[8][0].config(text="({},{})".format(btres[0],btres[1]))
-        labels[8][1].config(text="({},{})".format(btres[2],btres[3]))
-        labels[8][2].config(text="({},{})".format(btres[4],btres[5]))
-        labels[8][3].config(text="BT Dig")
+        labels[8][0].config(text="({},{})".format(btres[0],btres[1]),fg="#000000")
+        labels[8][1].config(text="({},{})".format(btres[2],btres[3]),fg="#000000")
+        labels[8][2].config(text="({},{})".format(btres[4],btres[5]),fg="#000000")
+        labels[8][3].config(text="BT Dig",fg="#000000")
 #bg12=BG()
 #bg12.start()
 #bg12.gbind("<Double-KeyRelease-v>",key_press12)
@@ -853,15 +870,20 @@ def key_press14(event):
     coords=READCOORD(sw,sh,debug,1)
     if coords.valid:
         saved_coord=[coords.x,coords.y,coords.z]
-    labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]))
+    labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]),fg="#000000")
     labels[8][1].config(text="")
-    labels[8][2].config(text="Saved Coord")
+    labels[8][2].config(text="Saved Coord",fg="#000000")
     labels[8][3].config(text="")
 def key_press15(event):
-    labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]))
+    labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]),fg="#000000")
     labels[8][1].config(text="")
-    labels[8][2].config(text="Saved Coord")
+    labels[8][2].config(text="Saved Coord",fg="#000000")
     labels[8][3].config(text="")
+def key_press16(event):
+    curinpind=input_mode_list.index(cur_input_mode.get())
+    curinpind=(curinpind+1)%4
+    cur_input_mode.set(input_mode_list[curinpind])
+    set_mode()
 
 # Mouse tracking
 sum_move=0
@@ -931,7 +953,7 @@ def key_press6(event):
 # Keybind help
 hotkey_desc=["Paste coord 1","Paste coord 2","Add data","Start mouse tracking","End mouse tracking","Minimize window",
              "Pixel shift +0.5","Pixel shift -0.5","Pixel shift +0.1","Pixel shift -0.1","Stronghold dig spot",
-             "Buried treasure dig spot","Hide dig spot","Save coordinate","Display saved coordinate"]
+             "Buried treasure dig spot","Hide dig spot","Save coordinate","Display saved coordinate","Change input mode"]
 def keybind_help():
     nhelp=hotkeylist.index("end")
     if isinstance(nhelp,int):
@@ -1022,7 +1044,7 @@ def changehotkey():
     c2_dis.place_forget()
     add_but.place_forget()
     
-    for i in range(13):
+    for i in range(len(hotkey_desc)):
         bindglobal[i].stop()
 
     changehotkeylist.place(x=15,y=10)
@@ -1145,14 +1167,14 @@ class Result(ctypes.Structure):
     _fields_=[("prob",ctypes.c_double),("ratio",ctypes.c_double),("x",ctypes.c_int),("z",ctypes.c_int)]
 
 # C functions
-dll1=ctypes.CDLL(path("prior.dll"))
+dll1=ctypes.CDLL(path("resource/prior.dll"))
 PRIOR=dll1.calculate_prior
 PRIOR.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,
                 ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result),
                 ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.c_int]
 PRIOR.restype=ctypes.c_int
 
-dll2=ctypes.CDLL(path("update.dll"))
+dll2=ctypes.CDLL(path("resource/update.dll"))
 UPDATE=dll2.update_prob
 UPDATE.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,
                  ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,
@@ -1176,6 +1198,10 @@ PROBWITHIN.restype=ctypes.c_double
 PROBWITHIN2=dll2.prob_within2
 PROBWITHIN2.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int]
 PROBWITHIN2.restype=ctypes.c_double
+
+VILLAGEGRID=dll2.village_grid
+VILLAGEGRID.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,ctypes.POINTER(Result)]
+VILLAGEGRID.restype=ctypes.c_int
 
 # precalculated lists
 DoubleArrayType=ctypes.c_double*len(vilprob16)
@@ -1276,9 +1302,12 @@ def add_prob(n):
     end_time=time.time()
     print(n)
     print(["time spent",end_time-start_time])
-    print(["info"]+info[:3])
-        
+    print(["info"]+info[:4])
+
+# Display
 def display():
+    global gridres, lengrid
+    
     a=time.time()
     global prob_dis
     show_stronghold_dig=0
@@ -1303,54 +1332,21 @@ def display():
 
     # Village grid
     if cur_pc_value==-1:
-        if game_version.get()!="Pre 1.18.30":
-            vil_grid=[]
-            vil_list=[]
-            vil_prob_list=[]
-            cur_grid=[int(pt[0][0]/16/34),int(pt[0][2]/16/34)]
-            min_limit=[cur_grid[0]-8,cur_grid[1]-8]
-            for i in range(cur_grid[0]-8,cur_grid[0]+8):
-                for j in range(cur_grid[1]-8,cur_grid[1]+8):
-                    vil_grid.append([i,j])
-                    vil_list.append([])
-                    vil_prob_list.append([])
-            for i in range(lencand):
-                if (res[i].x)%34<28 and (res[i].z)%34<28:
-                    xgrid=(res[i].x)//34
-                    zgrid=(res[i].z)//34
-                    grid_ind=(xgrid-min_limit[0])*16+(zgrid-min_limit[1])
-                    vil_list[grid_ind].append(i)
-                    vil_prob_list[grid_ind].append(res[i].prob)
+        prev_layout=(game_version.get()=="Pre 1.18.30")
+        limit=int(cur_within.get()/16)
+        if prev_layout:
+            gridlimit=math.ceil(limit/27)+3
         else:
-            vil_grid=[]
-            vil_list=[]
-            vil_prob_list=[]
-            cur_grid=[int(pt[0][0]/16/27),int(pt[0][2]/16/27)]
-            min_limit=[cur_grid[0]-10,cur_grid[1]-10]
-            for i in range(cur_grid[0]-10,cur_grid[0]+10):
-                for j in range(cur_grid[1]-10,cur_grid[1]+10):
-                    vil_grid.append([i,j])
-                    vil_list.append([])
-                    vil_prob_list.append([])
-            for i in range(lencand):
-                if (res[i].x)%27<18 and (res[i].z)%27<18:
-                    xgrid=(res[i].x)//27
-                    zgrid=(res[i].z)//27
-                    grid_ind=(xgrid-min_limit[0])*16+(zgrid-min_limit[1])
-                    vil_list[grid_ind].append(i)
-                    vil_prob_list[grid_ind].append(res[i].prob)
+            gridlimit=math.ceil(limit/34)+3
+        maxchunk=(gridlimit*2+1)**2
+        OutputArrayType=Result*maxchunk
+        gridres=OutputArrayType()
+
+        lengrid=VILLAGEGRID(int(pt[0][0]),int(pt[0][1]),gridlimit,int(prev_layout),res,lencand,gridres)
+
         prob_dis=[]
-        for i in range(len(vil_grid)):
-            grid_len=len(vil_prob_list[i])
-            if grid_len>0:
-                k=[]
-                grid_prob=sum(vil_prob_list[i])
-                k.append(grid_prob)
-                grid_x=round(sum((res[vil_list[i][j]].x*16+2)*vil_prob_list[i][j] for j in range(grid_len))/grid_prob)
-                grid_z=round(sum((res[vil_list[i][j]].z*16+2)*vil_prob_list[i][j] for j in range(grid_len))/grid_prob)
-                k=k+[grid_x,grid_z,grid_x//8,grid_z//8,vil_grid[i][0],vil_grid[i][1]]
-                prob_dis.append(k)
-        prob_dis=heapq.nlargest(ndis,prob_dis)
+        for i in range(ndis):
+            prob_dis.append([gridres[i].prob,i,gridres[i].x,gridres[i].z,0,0])
     else:
         prob_dis=[]
         for i in range(ndis):
@@ -1369,8 +1365,8 @@ def display():
         
     for i in range(ndis):
         if cur_pc_value==-1:
-            labels[i][0].config(text="("+str(prob_dis[i][1])+","+str(prob_dis[i][2])+")")
-            labels[i][1].config(text="("+str(prob_dis[i][3])+","+str(prob_dis[i][4])+")")
+            labels[i][0].config(text="("+str(prob_dis[i][2])+","+str(prob_dis[i][3])+")")
+            labels[i][1].config(text="("+str(prob_dis[i][2]//8)+","+str(prob_dis[i][3]//8)+")")
             k=prob_dis[i][0]
         else:
             j=prob_dis[i][1]
@@ -1380,20 +1376,17 @@ def display():
             
         if k<0.05:
             k2=k*(1/0.05)
-            col_code=[0,0,0]
-            col_code[high_col.get()]=math.floor(k2*127)
+            col_code=[int(max_col[i]*(k2/2)) for i in range(3)]
         else:
             k2=(k-0.05)*(1/0.95)
-            col_code=[0,0,0]
-            col_code[high_col.get()]=math.floor(127+k2*127)
+            col_code=[int(max_col[i]*(0.5+k2/2)) for i in range(3)]
         if i==0 and prob_dis[i][0]>2/lencand:
             labels[i][2].config(text=disprob2(prob_dis[i][0]),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft2)
         else:
             labels[i][2].config(text=disprob2(prob_dis[i][0]),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
 
         if cur_pc_value>0:
-            col_code=[0,0,0]
-            col_code[high_col.get()]=math.floor(255*prob2[i])
+            col_code=[int(max_col[i]*(prob2[i])) for i in range(3)]
             if max(prob2)==prob2[i] and prob2[i]>0.1:
                 labels[i][3].config(text=disprob2(prob2[i]),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft2)
             else:
@@ -1409,18 +1402,18 @@ def display():
             mean_z=round(info[2])
             mean_net_x=mean_x//8
             mean_net_z=mean_z//8
+        col_code=max_col
         labels[8][0].config(text="("+str(mean_x)+","+str(mean_z)+")")
         labels[8][1].config(text="("+str(mean_net_x)+","+str(mean_net_z)+")")
-        labels[8][2].config(text="Mean")
+        labels[8][2].config(text="Mean",fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
 
         if cur_pc_value>0:
             p2=PROBWITHIN2(mean_x,mean_z,pc2,res,lencand)
-            col_code=[0,0,0]
-            col_code[high_col.get()]=math.floor(255*p2)
+            col_code=[int(max_col[i]*p2) for i in range(3)]
             labels[8][3].config(text=disprob2(p2),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
         else:
             labels[i][3].config(text="")
-
+        
 # Result
 tk.Label(win,text="OVERWORLD").place(x=160,y=83,anchor=tk.CENTER)
 tk.Label(win,text="NETHER").place(x=240,y=83,anchor=tk.CENTER)
