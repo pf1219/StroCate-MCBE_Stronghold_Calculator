@@ -2,16 +2,16 @@
 Stronghold location calculator for Minecraft Bedrock Edition
 
 ## Features
-* Calculates probability of each chunk (distance from (0,0) < 4000) having a stronghold
+* Calculates probability of each chunk (distance from first eye throw < 10000) having a stronghold
 * Uses prior probability using information about how strongholds generate in Bedrock Edition
 * Updates probability based on measurement using Bayes' theorem
-* Users can customize standard measurement error according to how accurate you are in measuring eye
-* Two input method available
-* Provides probability stronghold is within N chunks from each chunk
+* Users can customize standard measurement error according to how accurate they are in measuring eye
+* Multiple input method available
+* Calculates probability that stronghold is within N chunks from each chunk
 
 ## How to Use
 ### Game Setting
-* "Enable Copy Coordinate UI" should be enabled in advance
+* Turn on "Enable Copy Coordinate UI", in version 1.20 or higher
   - You can find this option in Settings → General → Creator → Creator Settings → Enable Copy Coordinate UI
 
 ### Eye Allginment
@@ -23,7 +23,9 @@ Borrowed image from their video. (https://www.youtube.com/watch?v=ktuEf4qcdt8)
 
 ![image](https://github.com/user-attachments/assets/d7e220e3-fbea-4911-8d82-cd0a2ba29577)
 * Allgin this (monitor) pixel in the crosshair to the right of the center (minecraft) pixel of the eye of ender
-* This differs device to device. To find out accurate setup for your device, run command /tp @p ~ ~ ~ facing @e [type= Eye_of_Ender_signal] while ender eye is hovering
+* This differs device to device. To find out accurate setup for your device, run command
+/tp @p ~ ~ ~ facing @e [type= Eye_of_Ender_signal]
+while ender eye is hovering
 
 ### Input
 #### Coord+Coord
