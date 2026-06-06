@@ -15,17 +15,39 @@ Stronghold location calculator for Minecraft Bedrock Edition
   - You can find this option in Settings → General → Creator → Creator Settings → Enable Copy Coordinate UI
 
 ### Eye Allginment
-Information in this section is by TyGer. (https://www.youtube.com/@tyger2k)
-Borrowed image from their video. (https://www.youtube.com/watch?v=ktuEf4qcdt8)
+* Information in this section is by TyGer. (https://www.youtube.com/@tyger2k)
+* Borrowed image from their video. (https://www.youtube.com/watch?v=ktuEf4qcdt8)
 
 ![image](https://github.com/user-attachments/assets/c0b2e424-1f80-4423-bab7-6d209191a3bc)
 * Standard eye allginment
 
 ![image](https://github.com/user-attachments/assets/d7e220e3-fbea-4911-8d82-cd0a2ba29577)
 * Allgin this (monitor) pixel in the crosshair to the right of the center (minecraft) pixel of the eye of ender
-* This differs device to device. To find out accurate setup for your device, run command
+* This differs from device to device. To find out accurate setup for your device, run command
 /tp @p ~ ~ ~ facing @e [type= Eye_of_Ender_signal]
 while ender eye is hovering
+
+### Coordinate input
+* There are 4 ways you can input coordinates
+
+#### Copy+Paste
+* This is available in version 1.20+ and you should turn on "Enable Copy Coordinate UI".
+* Copy coordinate (Default: CTRL + ALT + C)
+* Paste coordinate by either pressing "PASTE" button or using hotkey (Default: [ for coordinate 1, ] for coordinate 2)
+
+#### Copy+Paste (corner)
+* This is identical with "Copy+Paste", but coordinate 1 must be in the corner of the block
+  (fractional part of the coordinate should be 0.30 or 0.70)
+* Using this makes measurement about 30% more accurate
+
+#### Show coordinates
+* This works in all versions, but for version 1.20+, using "Copy+Paste" is recommended as it is far more accurate
+* You should turn on "Show coordinates" on the settings
+* Paste coordinate using hotkey (Default: [ for coordinate 1, ] for coordinate 2)
+
+#### Manual input
+* Manualy input coordinate by typing on the input box
+* It doesn't have to be integers, so you can count pixels and write more accurate coordinates
 
 ### Input
 #### Coord+Coord
@@ -34,7 +56,7 @@ while ender eye is hovering
   - For more accurate measurement, use low FOV(30°) and/or low camera sensitivity(0%)
  
 ![image](https://github.com/user-attachments/assets/560213de-383a-49ad-9e6b-70c1d547045e)
-* Copy coordinate and press "PASTE" button next to "Coord 1"
+* Copy coordinate and press "PASTE" button next to "Coord 1" (or hotkey for 
 * Move forward. Make sure your direction doesn't change due to surrounding terrain 
   - Moving more distance does make prediction accurate, but not being obstructed by terrain is much more important
   - Moving 5 blocks would cause 0.03° standard error and moving more than 16 blocks would ensure standard error smaller than 0.01°
