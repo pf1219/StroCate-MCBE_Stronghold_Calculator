@@ -160,7 +160,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.72 (2026.06.04.)")
+about.add_cascade(label="Version 2.73.(2026.06.07.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -392,7 +392,10 @@ for i in range(len(highcol_list)):
 # Load data
 def set_version():
     for i in range(len(pt)):
-        add_prob(i)
+        if i==0:
+            add_prob(i,True)
+        else:
+            add_prob(i,False)
     display()
     set_infobar()
     
@@ -412,7 +415,10 @@ priormenu=tk.Menu(options,tearoff=False)
 options.add_cascade(label="Prior probability",menu=priormenu)
 def set_prior():
     for i in range(len(pt)):
-        add_prob(i)
+        if i==0:
+            add_prob(i,True)
+        else:
+            add_prob(i,False)
     display()
 priormenu.add_radiobutton(label="Based on simulation",value="Simulation",variable=cur_prior,command=set_prior)
 priormenu.add_radiobutton(label="Uniform probability",value="Uniform",variable=cur_prior,command=set_prior)
@@ -532,7 +538,10 @@ def add_point():
                 x2_inp.delete(0,tk.END)
                 z1_inp.delete(0,tk.END)
                 z2_inp.delete(0,tk.END)
-            add_prob(0)
+            if len(pt)==1:
+                add_prob(0,True)
+            else:
+                add_prob(0,False)
             display()
     elif cur_input_mode.get()=="Corner+Facing":
         mod1=round(x1%1,2)
@@ -598,7 +607,10 @@ def add_point():
                     x2_inp.delete(0,tk.END)
                     z1_inp.delete(0,tk.END)
                     z2_inp.delete(0,tk.END)
-                add_prob(0)
+                if len(pt)==1:
+                    add_prob(0,True)
+                else:
+                    add_prob(0,False)
                 display()
     elif cur_input_mode.get()=="Pixel Perfect":
         valid=True
@@ -635,7 +647,10 @@ def add_point():
                 x2_inp.delete(0,tk.END)
                 z1_inp.delete(0,tk.END)
                 z2_inp.delete(0,tk.END)
-            add_prob(0)
+            if len(pt)==1:
+                add_prob(0,True)
+            else:
+                add_prob(0,False)
             display()
     else:
         valid=True
@@ -666,11 +681,14 @@ def add_point():
                 z1_inp.delete(0,tk.END)
                 z2_inp.delete(0,tk.END)
             c2_dis.config(text="Angle: 0 Deg")
-            add_prob(0)
+            if len(pt)==1:
+                add_prob(0,True)
+            else:
+                add_prob(0,False)
             display()
 
 def del_point():
-    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual
+    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual, lencand
     try:
         ind=listdata.curselection()[0]
         listdata.delete(ind)
@@ -682,15 +700,19 @@ def del_point():
         pt_pixel.pop(ind)
         pt_pixel_err.pop(ind)
         pt_manual.pop(ind)
+        lencand=0
         for i in range(len(pt)):
-            add_prob(i)
+            if i==0:
+                add_prob(i,True)
+            else:
+                add_prob(i,False)
         display()
     except:
         pass
 
 def clear():
     a=time.time()
-    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual
+    global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual, lencand
     pt=[]
     pt_mode=[]
     pt_prec=[]
@@ -700,6 +722,7 @@ def clear():
     pt_pixel_err=[]
     pt_manual=[]
     listdata.delete(0,tk.END)
+    lencand=0
     display()
     # x1_inp.delete(0,tk.END)
     # x2_inp.delete(0,tk.END)
@@ -1233,7 +1256,7 @@ def calculate_prior(x1,z1):
     else:
         lencand=PRIOR(int(x1),int(z1),limit,0,based_on_simul,a_vilprob,len(vilprob),res,info,a_distprob,len(distprob))
     
-def add_prob(n):
+def add_prob(n,prior):
     start_time=time.time()
     global res, lencand
     x1=pt[n][0]
@@ -1242,7 +1265,7 @@ def add_prob(n):
     z2=pt[n][3]
 
     # prior probability
-    if len(pt)==1:
+    if prior:
         calculate_prior(x1,z1)
         print("PRIOR")
 
