@@ -2,12 +2,9 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as font
-import pyperclip, math, csv, os, webbrowser, heapq
+import pyperclip, math, csv, os, webbrowser, msvcrt, time, ctypes, string
 from functools import partial
 from bindglobal import BindGlobal as BG
-from pyautogui import screenshot
-from numpy import array, uint8, array_equal
-import sys, os, time, ctypes, string
 
 # Pyinstaller setting
 def path(relative_path):
@@ -65,6 +62,9 @@ def disprob2(x):
     return(f'{a:.1f}'+"%")
 def rgb_to_hex(r, g, b):
   return '#{:02X}{:02X}{:02X}'.format(r, g, b)
+def clear_input_buffer():
+    while msvcrt.kbhit():
+        msvcrt.getch()
 
 # Window
 win=tk.Tk()
@@ -160,7 +160,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.73.(2026.06.07.)")
+about.add_cascade(label="Version 2.74.(2026.06.10.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -750,6 +750,9 @@ c2_but.place(x=200,y=35)
 pixel_dis=tk.Label(win,text="Pixel")
 
 # Hotkey
+bg=BG()
+bg.gbind("<KeyRelease>",clear_input_buffer())
+
 def key_press1(event):
     set_c1()
 #bg1=BG()
@@ -1204,7 +1207,7 @@ UPDATE.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double
                  ctypes.POINTER(ctypes.c_double)]
 UPDATE.restype=ctypes.c_int
 
-OutputArrayType=ctypes.c_double*10
+OutputArrayType=ctypes.c_double*100
 info=OutputArrayType()
 
 UPDATEPF=dll2.update_prob_pf
@@ -1221,6 +1224,11 @@ PROBWITHIN.restype=ctypes.c_double
 PROBWITHIN2=dll2.prob_within2
 PROBWITHIN2.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int]
 PROBWITHIN2.restype=ctypes.c_double
+
+PROBWITHIN3=dll2.prob_within3
+PROBWITHIN3.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,ctypes.POINTER(Result),ctypes.POINTER(ctypes.c_double)]
+PROBWITHIN3.restype=ctypes.c_int
+
 
 VILLAGEGRID=dll2.village_grid
 VILLAGEGRID.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,ctypes.POINTER(Result)]
@@ -1313,10 +1321,10 @@ def add_prob(n,prior):
     if pt_mode[n]=="Coord+Coord" or pt_mode[n]=="Corner+Facing":
         lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
     elif pt_mode[n]=="Pixel Perfect":
-        print(lencand)
         newver=int(game_version.get()=="1.21.100+")
         lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n],error_dist,newver,a_pdf,len(pdf),res,lencand,info)
-        print(lencand)
+        print([info[6],info[7]])
+        print([info[10],info[11]])
     elif pt_mode[n]=="Mouse Tracking":
         x2=x1+math.cos(pt[n][2]/pt[n][3]*math.pi/2)*10
         z2=z1+math.sin(pt[n][2]/pt[n][3]*math.pi/2)*10
@@ -1329,7 +1337,7 @@ def add_prob(n,prior):
 
 # Display
 def display():
-    global gridres, lengrid
+    global gridres, lengrid, prob2, withinres
     
     a=time.time()
     global prob_dis
@@ -1365,7 +1373,7 @@ def display():
         OutputArrayType=Result*maxchunk
         gridres=OutputArrayType()
 
-        lengrid=VILLAGEGRID(int(pt[0][0]),int(pt[0][1]),gridlimit,int(prev_layout),res,lencand,gridres)
+        lengrid=VILLAGEGRID(int(pt[-1][0]),int(pt[-1][1]),gridlimit,int(prev_layout),res,lencand,gridres)
 
         prob_dis=[]
         for i in range(ndis):
@@ -1376,10 +1384,18 @@ def display():
             prob_dis.append([res[i].prob,i,res[i].x*16+4,res[i].z*16+4,res[i].x*8,res[i].z*8])
 
     # prob within
+    ind=[i for i in range(ndis)]
+    prob2=[]
     if cur_pc_value>0:
-        prob2=[]
-        for i in range(ndis):
-            prob2.append(PROBWITHIN(res[i].x,res[i].z,pc2_chunk,res,lencand))
+        OutputArrayType=Result*100
+        withinres=OutputArrayType()
+        max_ind=PROBWITHIN3(int(pt[-1][0]),int(pt[-1][1]),cur_within.get(),pc2_chunk,res,lencand,withinres,info)
+        if max_ind>=ndis:
+            ind[-1]=max_ind
+            i=max_ind
+            prob_dis[-1]=[res[i].prob,i,res[i].x*16+4,res[i].z*16+4,res[i].x*8,res[i].z*8]
+        for i in range(len(ind)):
+            prob2.append(withinres[ind[i]].prob)
     
     # Display
     for i in range(9):
@@ -1399,17 +1415,17 @@ def display():
             
         if k<0.05:
             k2=k*(1/0.05)
-            col_code=[int(max_col[i]*(k2/2)) for i in range(3)]
+            col_code=[int(max_col[j]*(k2/2)) for j in range(3)]
         else:
             k2=(k-0.05)*(1/0.95)
-            col_code=[int(max_col[i]*(0.5+k2/2)) for i in range(3)]
+            col_code=[int(max_col[j]*(0.5+k2/2)) for j in range(3)]
         if i==0 and prob_dis[i][0]>2/lencand:
             labels[i][2].config(text=disprob2(prob_dis[i][0]),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft2)
         else:
             labels[i][2].config(text=disprob2(prob_dis[i][0]),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
 
         if cur_pc_value>0:
-            col_code=[int(max_col[i]*(prob2[i])) for i in range(3)]
+            col_code=[int(max_col[j]*(prob2[i])) for j in range(3)]
             if max(prob2)==prob2[i] and prob2[i]>0.1:
                 labels[i][3].config(text=disprob2(prob2[i]),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft2)
             else:
@@ -1436,6 +1452,8 @@ def display():
             labels[8][3].config(text=disprob2(p2),fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]),font=ft)
         else:
             labels[i][3].config(text="")
+
+    print(time.time()-a)
         
 # Result
 tk.Label(win,text="OVERWORLD").place(x=160,y=83,anchor=tk.CENTER)
