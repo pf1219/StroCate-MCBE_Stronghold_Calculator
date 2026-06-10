@@ -138,27 +138,26 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
     info[5]=kdist;
     double error_dist2=pixel*error_dist/dist;
     double error_pf=sqrt(error_coef*error_coef+error_dist2*error_dist2+error_pfmeasure*error_pfmeasure);
-    info[6]=error_pf;
-    info[7]=error_coef;
-    info[8]=error_dist2;
-    info[9]=error_pfmeasure;
 
     double xvec1=x2-x1;
     double zvec1=z2-z1;
     double newx1=x1+xvec1*shift/dist;
     double newz1=z1+zvec1*shift/dist; 
-    double a=newx1+0.5;
-    double b=newz1+0.5;
+    double a=x1+0.5;
+    double b=z1+0.5;
     double xeye1,xeye2,zeye1,zeye2,xeye,zeye;
+    
+    info[6]=newx1;
+    info[7]=newz1;
 
-    if(newz1==z2){
+    if(z1==z2){
         xeye1=newx1;
         xeye2=newx1;
         zeye1=newz1+sqrt(143.75);
         zeye2=newz1-sqrt(143.75);
     }
     else{
-        double p=(x2-newx1)/(z2-newz1)*-1;
+        double p=(x2-x1)/(z2-z1)*-1;
         double q=newz1-p*newx1;
         double r=12;
         double denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r;
@@ -170,8 +169,8 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
         zeye2=p*xeye2+q;
     }
 
-    double xdir=z2-newz1;
-    double zdir=newx1-x2;
+    double xdir=z2-z1;
+    double zdir=x1-x2;
     double cos1=xdir*(xeye1-a)+zdir*(zeye1-b);
     double cos2=xdir*(xeye2-a)+zdir*(zeye2-b);
     if(cos1>cos2){
@@ -182,6 +181,9 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
         xeye=xeye2;
         zeye=zeye2;
     }
+
+    info[10]=xeye;
+    info[11]=zeye;
 
     double xvec=xeye-a;
     double zvec=zeye-b;
@@ -303,12 +305,22 @@ int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, in
     vector<double> zmean(size2,0);
 
     for(int i=0 ; i<ncand ; i++){
+        int curx=res[i].x;
+        int curz=res[i].z;
         if(prev_layout){
-            int curx=res[i].x;
-            int curz=res[i].z;
             if(((curx%27)+27)%27<=17 && ((curz%27)+27)%27<=17){
                 int curgridx=curx/27-minx;
                 int curgridz=curz/27-minz;
+                int ind=curgridx*size+curgridz;
+                prob[ind] += res[i].prob;
+                xmean[ind] += res[i].prob*(curx*16+4);
+                zmean[ind] += res[i].prob*(curz*16+4);
+            }
+        }
+        else{
+            if(((curx%34)+34)%34<=27 && ((curz%34)+34)%34<=27){
+                int curgridx=curx/34-minx;
+                int curgridz=curz/34-minz;
                 int ind=curgridx*size+curgridz;
                 prob[ind] += res[i].prob;
                 xmean[ind] += res[i].prob*(curx*16+4);
@@ -333,4 +345,77 @@ int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, in
     });
 
     return(ngrid);
+}
+
+extern "C" __declspec(dllexport)
+int prob_within3(int x1, int z1, int str_within, int pc2c, Result* res, int lencand, Result* withinres, double* info){
+    int cx1=x1/16;
+    int cz1=z1/16;
+    int chunk_within=ceil(str_within/16);
+    int mx=cx1-chunk_within;
+    int Mx=cx1+chunk_within;
+    int mz=cz1-chunk_within;
+    int Mz=cz1+chunk_within;
+    int size1=chunk_within*2+1;
+    int size2=size1*size1;
+
+    /* grid */
+    vector<double> prob(size2,0);
+    for(int i=0 ; i<lencand ; i++){
+        int indx=res[i].x-mx;
+        int indz=res[i].z-mz;
+        int ind=indx*size1+indz;
+        prob[ind]=res[i].prob;
+    }
+
+    double sumprob=0;
+    for(int i=0 ; i<size2 ; i++){sumprob += prob[i];}
+    info[5]=sumprob;
+
+    /* within */
+    vector<int> xr;
+    vector<int> zr;
+    int dc=ceil(sqrt(pc2c));
+    for(int i=-1*dc ; i<(dc+1) ; i++){
+        for(int j=-1*dc ; j<(dc+1) ; j++){
+            if(i*i+j*j <= pc2c){
+                xr.push_back(i);
+                zr.push_back(j);
+            }
+        }
+    }
+
+    int lenxr=xr.size();;
+    info[6]=lenxr;
+
+    /* calculate */
+    int maxind=-1;
+    double maxvalue=-1;
+    int ncheck=min(lencand,100);
+
+    info[7]=ncheck;
+
+    for(int i=0 ; i<ncheck ; i++){
+        double curprob=0.0;
+        int cur_x=res[i].x;
+        int cur_z=res[i].z;
+        for(int i=0 ; i<lenxr ; i++){
+            int new_x=cur_x+xr[i];
+            int new_z=cur_z+zr[i];
+            if(new_x>=mx && new_x<=Mx && new_z>=mz && new_z<=Mz){
+                int indx=new_x-mx;
+                int indz=new_z-mz;
+                int ind=indx*size1+indz;
+                curprob += prob[ind];
+            }
+        }
+
+        withinres[i].prob=curprob;
+        if(curprob>maxvalue){
+            maxind=i;
+            maxvalue=curprob;
+        }
+    }
+
+    return(maxind);
 }
