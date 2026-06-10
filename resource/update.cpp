@@ -122,22 +122,27 @@ int update_prob(double x1, double z1, double x2, double z2, double error, double
 extern "C" __declspec(dllexport)
 int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, double error, double error_pfmeasure, double error_dist, int newver, double* PDF, int npdf, Result* res, int lencand, double* info){
     double dist=sqrt((x2-x1)*(x2-x1)+(z2-z1)*(z2-z1));
-    double shift, error_coef, kdist;
+    double shift, error_coef, kdist, dist_coef;
     if(newver){
         shift=0.196;
         error_coef=pixel/15.604;
-        kdist=dist*391.857;
+        dist_coef=391.857;
+        kdist=dist*dist_coef;
     }
     else{
         shift=0.4032;
         error_coef=pixel/47.739;
-        kdist=dist*185.468;
+        dist_coef=185.468;
+        kdist=dist*dist_coef;
     }
-    info[3]=(x2-x1)*(x2-x1)+(z2-z1)*(z2-z1);
-    info[4]=dist;
-    info[5]=kdist;
-    double error_dist2=pixel*error_dist/dist;
+    double xdist=kdist/pixel;
+    double error_dist2=dist_coef*error_dist/dist/xdist;
     double error_pf=sqrt(error_coef*error_coef+error_dist2*error_dist2+error_pfmeasure*error_pfmeasure);
+
+    info[19]=error;
+    info[20]=error_coef;
+    info[21]=error_dist2;
+    info[22]=error_pfmeasure;
 
     double xvec1=x2-x1;
     double zvec1=z2-z1;
