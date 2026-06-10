@@ -160,7 +160,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.74.(2026.06.10.)")
+about.add_cascade(label="Version 2.75.(2026.06.10.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -1296,23 +1296,23 @@ def add_prob(n,prior):
         error_precision=(error_prec1**2+error_prec2**2)**0.5
     if error_precision==-1000:
         if pt_coord[n]=="Copy+Paste":
-            error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.25
+            error_precision=0.01/dist*0.25
             error_dist=0.3/100
         elif pt_coord[n]=="Copy+Paste (Corner)":
-            error_precision=math.atan(0.01*math.sqrt(2)/dist)*0.177
+            error_precision=0.01/dist*0.17
             error_dist=0.3/100
         elif pt_coord[n]=="Show Coordinate":
-            error_precision=math.atan(1*math.sqrt(2)/dist)*0.25
+            error_precision=1/dist*0.25
             error_dist=0.3
         else:
             if pt_manual[n]=="Show coordinate":
-                error_precision=math.atan(0.3*math.sqrt(2)/dist)*0.2
+                error_precision=1/dist*0.25
                 error_dist=0.3
             elif pt_manual[n]=="Count minecraft pixel":
-                error_precision=math.atan(0.01875*math.sqrt(2)/dist)*0.2
+                error_precision=(1/16)/dist*0.25
                 error_dist=0.01875
             else:
-                error_precision=math.atan(0.0002*math.sqrt(2)/dist)*0.2
+                error_precision=(1/1500)/dist*0.25
                 error_dist=0.0002
     error_combine=(error_angle**2+error_precision**2)**0.5
     print(["error",error_angle,error_precision,error_combine])
@@ -1323,8 +1323,7 @@ def add_prob(n,prior):
     elif pt_mode[n]=="Pixel Perfect":
         newver=int(game_version.get()=="1.21.100+")
         lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n],error_dist,newver,a_pdf,len(pdf),res,lencand,info)
-        print([info[6],info[7]])
-        print([info[10],info[11]])
+        print(["PF ERROR",info[19],info[20],info[21],info[22]])
     elif pt_mode[n]=="Mouse Tracking":
         x2=x1+math.cos(pt[n][2]/pt[n][3]*math.pi/2)*10
         z2=z1+math.sin(pt[n][2]/pt[n][3]*math.pi/2)*10
