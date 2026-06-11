@@ -99,8 +99,26 @@ debug=OutputArrayType()
 OutputArrayType=ctypes.c_int*6
 btres=OutputArrayType()
 
-# Angle measurement setup
-exec(open(path("resource/mouse_track.py")).read())
+# angle measurement setup
+mouse_dll=ctypes.CDLL(path("resource/mouse.dll"))
+
+START_TRACK=mouse_dll.start_tracking
+START_TRACK.argtypes=[]
+START_TRACK.restype=None
+
+GET_TRACK=mouse_dll.get_mouse_data
+GET_TRACK.argtypes=[ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int)]
+GET_TRACK.restype=None
+
+RESET_TRACK=mouse_dll.reset_data
+RESET_TRACK.argtypes=[]
+RESET_TRACK.restype=None
+
+STOP_TRACK=mouse_dll.stop_tracking
+STOP_TRACK.argtypes=[]
+STOP_TRACK.restype=None
+
+# exec(open(path("resource/mouse_track.py")).read())
 
 # Info bar
 def set_infobar():
@@ -160,7 +178,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.75.(2026.06.10.)")
+about.add_cascade(label="Version 2.8.0 (2026.06.12.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -198,7 +216,7 @@ for i in range(len(pixel_perfect_list)):
     pixelperfectmenu.add_radiobutton(label=pixel_perfect_list[i],variable=cur_pixel_perfect,value=pixel_perfect_list[i],command=set_infobar)
 
 ## Manual Input
-manual_input_list=["Count monitor pixel","Count minecraft pixel","Show coordinate"]
+manual_input_list=["Count monitor pixel","Copy+Paste","Count minecraft pixel","Show coordinate"]
 cur_manual_input=tk.StringVar()
 cur_manual_input.set(manual_input_list[2])
 if cur_manual_input not in manual_input_list:
@@ -210,7 +228,7 @@ for i in range(len(manual_input_list)):
 
 ## Mouse Tracking
 def start_calibration():
-    print(1)
+    print("START CALIBRATION")
     global calibrating
     calibrating=1
     set_infobar()
@@ -509,7 +527,7 @@ def add_point():
         x2=x2+0.5
         z1=z1+0.5
         z2=z2+0.5
-    print(["added",x1,z1,x2,z2])
+    print(["ADD",x1,z1,x2,z2])
     if cur_input_mode.get()=="Coord+Coord":
         valid=True
         if cur_cinp.get()=="Copy+Paste (Corner)":
@@ -636,7 +654,7 @@ def add_point():
             pt_pixel.insert(0,npixel)
             pt_pixel_err.insert(0,cur_pixel_perfect.get())
             pt_manual.insert(0,cur_manual_input.get())
-            listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
+            listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}'+"/"+str(npixel))
             x1,x2,z1,z2=0,0,0,0
             pixel_inp.delete(0,tk.END)
             if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
@@ -724,11 +742,6 @@ def clear():
     listdata.delete(0,tk.END)
     lencand=0
     display()
-    # x1_inp.delete(0,tk.END)
-    # x2_inp.delete(0,tk.END)
-    # z1_inp.delete(0,tk.END)
-    # z2_inp.delete(0,tk.END)
-    # pixel_inp.delete(0,tk.END)
 
 def clear_inp(event):
     pixel_inp.delete(0,tk.END)
@@ -755,22 +768,13 @@ bg.gbind("<KeyRelease>",clear_input_buffer())
 
 def key_press1(event):
     set_c1()
-#bg1=BG()
-#bg1.start()
-#bg1.gbind("<[>",key_press1)
 
 def key_press2(event):
     if cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
         set_c2()
-#bg2=BG()
-#bg2.start()
-#bg2.gbind("<]>",key_press2)
 
 def key_press3(event):
     add_point()
-#bg3=BG()
-#bg3.start()
-#bg3.gbind("<=>",key_press3)
 
 def key_press7(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -782,9 +786,6 @@ def key_press7(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0.5")
-#bg7=BG()
-#bg7.start()
-#bg7.gbind("<P>",key_press7)
 
 def key_press8(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -796,9 +797,6 @@ def key_press8(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0")
-#bg8=BG()
-#bg8.start()
-#bg8.gbind("<M>",key_press8)
 
 def key_press9(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -810,9 +808,6 @@ def key_press9(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0.1")
-#bg9=BG()
-#bg9.start()
-#bg9.gbind("<p>",key_press9)
 
 def key_press10(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -824,9 +819,6 @@ def key_press10(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0")
-#bg10=BG()
-#bg10.start()
-#bg10.gbind("<m>",key_press10)
 
 # Dig spot
 def key_press11(event):
@@ -867,9 +859,6 @@ def key_press11(event):
         labels[8][1].config(text="( {} , {} )".format(sign1,sign2),fg="#000000")
         labels[8][2].config(text="SH Dig",fg="#000000")
         labels[8][3].config(text="")
-#bg11=BG()
-#bg11.start()
-#bg11.gbind("<Double-KeyRelease-c>",key_press11)
 
 def key_press12(event):
     coords=READCOORD(sw,sh,debug,0)
@@ -879,17 +868,10 @@ def key_press12(event):
         labels[8][1].config(text="({},{})".format(btres[2],btres[3]),fg="#000000")
         labels[8][2].config(text="({},{})".format(btres[4],btres[5]),fg="#000000")
         labels[8][3].config(text="BT Dig",fg="#000000")
-#bg12=BG()
-#bg12.start()
-#bg12.gbind("<Double-KeyRelease-v>",key_press12)
 
 def key_press13(event):
     display()
     
-# bg13=BG()
-# bg13.start()
-# bg13.gbind("<Double-KeyRelease-x>",key_press13)
-
 saved_coord=[0,0,0]
 def key_press14(event):
     global saved_coord
@@ -912,15 +894,14 @@ def key_press16(event):
     set_mode()
 
 # Mouse tracking
-sum_move=0
-sum_abs=0
+sum_move=ctypes.c_int(0)
+sum_abs=ctypes.c_int(0)
 def start_track():
     global sum_move, calibrating, measuring, sum_abs
     print("START TRACKING")
-    rid = RAWINPUTDEVICE(HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE, RIDEV_INPUTSINK, hwnd)
-    RegisterRawInputDevices(ct.byref(rid), 1, ct.sizeof(rid))
-    sum_move=0
-    sum_abs=0
+    sum_move=ctypes.c_int(0)
+    sum_abs=ctypes.c_int(0)
+    START_TRACK()
     if calibrating==1:
         calibrating=2
         set_infobar()
@@ -929,16 +910,14 @@ def start_track():
         measuring=2
 def key_press4(event):
     start_track()
-#bg4=BG()
-#bg4.start()
-#bg4.gbind("<F9>",key_press4)
 
 def stop_track():
     global sum_move, default, calibrating, track_angle, measuring, track_move, sum_abs
     print("STOP TRACKING")
-    rid = RAWINPUTDEVICE(HID_USAGE_PAGE_GENERIC, HID_USAGE_GENERIC_MOUSE, RIDEV_REMOVE, None)
-    RegisterRawInputDevices(ct.byref(rid), 1, ct.sizeof(rid))
-    print(sum_move)
+    GET_TRACK(ctypes.byref(sum_move),ctypes.byref(sum_abs))
+    STOP_TRACK()
+    sum_move=sum_move.value
+    sum_abs=sum_abs.value
     if calibrating==2:
         sum_move=abs(sum_move)
         default[10]=(default[10]*default[12]+sum_move)/(default[12]+1)
@@ -962,9 +941,6 @@ def stop_track():
         track_dis.config(text="Face pos X, Press F9")
 def key_press5(event):
     stop_track()
-#bg5=BG()
-#bg5.start()
-#bg5.gbind("<F10>",key_press5)
 
 # Iconify
 def key_press6(event):
@@ -972,9 +948,6 @@ def key_press6(event):
         win.state("normal")
     else:
         win.state("iconic")
-#bg6=BG()
-#bg6.start()
-#bg6.gbind("<F8>",key_press6)
 
 # Keybind help
 hotkey_desc=["Paste coord 1","Paste coord 2","Add data","Start mouse tracking","End mouse tracking","Minimize window",
@@ -1087,7 +1060,6 @@ def changehotkey():
     
 def hotkeylisten(event):
     global curkey
-    print(event.keycode)
     if event.keycode in valid_code:
         curmod=changehotkeymod.get()
         valid=True
@@ -1300,7 +1272,7 @@ def add_prob(n,prior):
             error_dist=0.3/100
         elif pt_coord[n]=="Copy+Paste (Corner)":
             error_precision=0.01/dist*0.17
-            error_dist=0.3/100
+            error_dist=0.212/100
         elif pt_coord[n]=="Show Coordinate":
             error_precision=1/dist*0.25
             error_dist=0.3
@@ -1311,6 +1283,9 @@ def add_prob(n,prior):
             elif pt_manual[n]=="Count minecraft pixel":
                 error_precision=(1/16)/dist*0.25
                 error_dist=0.01875
+            elif pt_manual[n]=="Copy+Paste":
+                error_precision=0.01/dist*0.25
+                error_dist=0.3/100
             else:
                 error_precision=(1/1500)/dist*0.25
                 error_dist=0.0002
@@ -1330,8 +1305,7 @@ def add_prob(n,prior):
         lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
 
     end_time=time.time()
-    print(n)
-    print(["time spent",end_time-start_time])
+    print(["CALCULATION TIME",end_time-start_time])
     print(["info"]+info[:4])
 
 # Display
@@ -1452,7 +1426,7 @@ def display():
         else:
             labels[i][3].config(text="")
 
-    print(time.time()-a)
+    print(["DISPLAY TIME",time.time()-a])
         
 # Result
 tk.Label(win,text="OVERWORLD").place(x=160,y=83,anchor=tk.CENTER)
