@@ -82,24 +82,35 @@ while ender eye is hovering
   - This value should be within 0 and 8
 * Calculate by either pressing "ADD" button or using hotkey (Default: =)
 
-#### Pixel Perfect
+#### Pixel perfect
 <img width="389" height="66" alt="image" src="https://github.com/user-attachments/assets/f8ecce7a-976a-4602-a645-8a876e6e44b2" />
 
 * Stand on the relatively flat area
 
 <img width="139" height="143" alt="image" src="https://github.com/user-attachments/assets/9dd20ef0-b7ba-44ee-b4c4-9f1c6896b183" />
 
-* Throw eye of ender and allign crosshair to the left side of the eye of ender
-   - It is recommended to use low FOV(30°) and/or low camera sensitivity(0%)
+* Throw eye of ender and align crosshair to the left side of the eye of ender
+  - It is recommended to use low FOV(30°) and/or low camera sensitivity(0%)
 * Input coordinate 1
 * Move right. Make sure your direction doesn't change due to surrounding terrain
   - Moving more distance does make prediction more accurate, but not being obstructed by terrain is much more important
 * Input coordinate 2
 * Input how many (minecraft) pixels have shifted by using either input box or hotkeys
+* Calculate by either pressing "ADD" button or using hotkey (Default: =)
+* 
+#### Mouse tracking
+<img width="325" height="56" alt="image" src="https://github.com/user-attachments/assets/32a07019-382f-4df9-bc76-0a470d820f42" />
 
+* You must calibrate first before you measure the eye
+  - Press F9, rotate 90 degrees, press F10
+* Input coordinate 1
+* Face positive X direction and press F9
+* Throw eye of the ender and align crosshair
+* Press F10
+* Calculate by either pressing "ADD" button or using hotkey (Default: =)
 
 ### Settings
-#### Align Error
+#### Eye align error
 * Set this value based on how accurate you are in aligning crosshair with eye of ender.
   - Smaller value → Assumes accurate crosshair alignment → More confident prediction
   - Bigger value → Assumes less accurate crosshair alignment → Less confident prediction
@@ -109,7 +120,7 @@ while ender eye is hovering
   - 1: You can align crosshair within center third of the ender eye
   - 4(Maximum): You can align crosshair within ender eye
 
-#### Pixel Error
+#### Pixel count error
 * This setting matters only if your input mode is "Corner+Facing"
 * Set this value based on how accurate you can measure how many (minecraft) pixel the crosshair is from the vertex.
   - Smaller value → Assumes accurate measurement → More confident prediction
@@ -119,14 +130,17 @@ while ender eye is hovering
   - 0.03: You can count (minecraft) pixels and round to 1 decimal point
   - 0.3(Maximum): You can count (minecraft) pixels and round to nearest integer
 
-#### Input Mode
-* Coord+Coord
-  - Recommeneded if surrounding terrain is flat
-  - Generally more accurate than Corner+Facing
-* Corner+Facing
-  - Recommended if surrounding terrain is irregular
- 
-#### Prob Within
+#### Pixel perfect error
+* This setting matters only if your input mode is "Pixel perfect"
+* Set this value based on how accurate you can measure pixel shift.
+
+#### Manual coord input
+* Count monitor pixel: You count (monitor) pixel and write coordinate
+* Copy+Paste: You copy coordinate (Default: CTRL + ALT + C) and write coordinate, in 2 decimal place precision
+* Count minecraft pixel: You count (minecraft) pixel and write cooridnate
+* Show coordinate: You write coordinate in integer
+
+#### Probability within
 * Display probability that stronghold is within N chunks from candidate chunk
 * This is supported because in Bedrock Edition, most near stronghold generate under the village. If you can find village within your render distance, you can easily locate stronghold with Sprinkz strategy
 * It's recommended to set this value according to your render distance
@@ -134,7 +148,6 @@ while ender eye is hovering
 ### Troubleshooting
 If calculator said 100% probability but stronghold wasn't there, consider..,
 * You were obstructed by terrain while measuring direction with "Coord+Coord" input method
-* Nearest stronghold was more than 4000 blocks away from (0,0)
 * Each eye directed diffrent stronghold
 * You set too low value in "align errror" or "pixel error" (=Your measurement were not accurate enough)
 
