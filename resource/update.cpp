@@ -124,13 +124,13 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
     double dist=sqrt((x2-x1)*(x2-x1)+(z2-z1)*(z2-z1));
     double shift, error_coef, kdist, dist_coef;
     if(newver){
-        shift=0.196;
+        shift=-1.555;
         error_coef=pixel/15.604;
         dist_coef=391.857;
         kdist=dist*dist_coef;
     }
     else{
-        shift=0.4032;
+        shift=-1.5366;
         error_coef=pixel/47.739;
         dist_coef=185.468;
         kdist=dist*dist_coef;
@@ -146,24 +146,23 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
 
     double xvec1=x2-x1;
     double zvec1=z2-z1;
-    double newx1=x1+xvec1*shift/dist;
-    double newz1=z1+zvec1*shift/dist; 
+    double nxvec=xvec1*cos(shift)-zvec1*sin(shift);
+    double nzvec=xvec1*sin(shift)+zvec1*cos(shift);
+    x2=x1+nxvec;
+    z2=z1+nzvec;
     double a=x1+0.5;
     double b=z1+0.5;
     double xeye1,xeye2,zeye1,zeye2,xeye,zeye;
-    
-    info[6]=newx1;
-    info[7]=newz1;
 
-    if(z1==z2){
-        xeye1=newx1;
-        xeye2=newx1;
-        zeye1=newz1+sqrt(143.75);
-        zeye2=newz1-sqrt(143.75);
+    if(x1==x2){
+        xeye1=x1;
+        xeye2=x1;
+        zeye1=b+sqrt(143.75);
+        zeye2=b-sqrt(143.75);
     }
     else{
-        double p=(x2-x1)/(z2-z1)*-1;
-        double q=newz1-p*newx1;
+        double p=(z2-z1)/(x2-x1);
+        double q=z1-p*x1;
         double r=12;
         double denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r;
         double denom2=a+b*p-p*q;
@@ -174,8 +173,8 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
         zeye2=p*xeye2+q;
     }
 
-    double xdir=z2-z1;
-    double zdir=x1-x2;
+    double xdir=x2-x1;
+    double zdir=z2-z1;
     double cos1=xdir*(xeye1-a)+zdir*(zeye1-b);
     double cos2=xdir*(xeye2-a)+zdir*(zeye2-b);
     if(cos1>cos2){
@@ -186,9 +185,6 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
         xeye=xeye2;
         zeye=zeye2;
     }
-
-    info[10]=xeye;
-    info[11]=zeye;
 
     double xvec=xeye-a;
     double zvec=zeye-b;
@@ -405,6 +401,7 @@ int prob_within3(int x1, int z1, int str_within, int pc2c, Result* res, int lenc
         int cur_x=res[i].x;
         int cur_z=res[i].z;
         for(int i=0 ; i<lenxr ; i++){
+            info[7]=i;
             int new_x=cur_x+xr[i];
             int new_z=cur_z+zr[i];
             if(new_x>=mx && new_x<=Mx && new_z>=mz && new_z<=Mz){
@@ -423,4 +420,58 @@ int prob_within3(int x1, int z1, int str_within, int pc2c, Result* res, int lenc
     }
 
     return(maxind);
+}
+
+extern "C" __declspec(dllexport)
+double angle_dif_cal(double x1, double z1, double x2, double z2, double strx, double strz){
+    double a=x1+0.5;
+    double b=z1+0.5;
+    double xeye1,xeye2,zeye1,zeye2,xeye,zeye;
+    if(x1==x2){
+        xeye1=x1;
+        xeye2=x1;
+        zeye1=b+sqrt(143.75);
+        zeye2=b-sqrt(143.75);
+    }
+    else{
+        double p=(z2-z1)/(x2-x1);
+        double q=z1-p*x1;
+        double r=12;
+        double denom1=-1*a*a*p*p+2*a*b*p-2*a*p*q-b*b+2*b*q+p*p*r*r-q*q+r*r;
+        double denom2=a+b*p-p*q;
+        double nom=p*p+1;
+        xeye1=(sqrt(denom1)+denom2)/nom;
+        xeye2=(-1*sqrt(denom1)+denom2)/nom;
+        zeye1=p*xeye1+q;
+        zeye2=p*xeye2+q;
+    }
+
+    double xdir=x2-x1;
+    double zdir=z2-z1;
+    double cos1=xdir*(xeye1-a)+zdir*(zeye1-b);
+    double cos2=xdir*(xeye2-a)+zdir*(zeye2-b);
+    if(cos1>cos2){
+        xeye=xeye1;
+        zeye=zeye1;
+    }
+    else{
+        xeye=xeye2;
+        zeye=zeye2;
+    }
+
+    double xvec1=xeye-a;
+    double zvec1=zeye-b;
+    double xvec2=strx-a;
+    double zvec2=strz-b;
+
+    double dist1=sqrt(xvec1*xvec1+zvec1*zvec1);
+    double dist2=sqrt(xvec2*xvec2+zvec2*zvec2);
+    double denom=xvec1*xvec2+zvec1*zvec2;
+
+    double val=denom/(dist1*dist2);
+    if(val>1.0){val=1.0;}
+    if(val<-1.0){val=-1.0;}
+    double angledif=acos(val);
+
+    return(angledif);
 }
