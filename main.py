@@ -2,7 +2,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as font
-import pyperclip, math, csv, os, webbrowser, msvcrt, time, ctypes, string
+import pyperclip, math, csv, os, webbrowser, msvcrt, time, ctypes, string, random
 from functools import partial
 from bindglobal import BindGlobal as BG
 
@@ -178,7 +178,7 @@ helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.8.0 (2026.06.12.)")
+about.add_cascade(label="Version 2.9.0 (2026.06.12.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -679,7 +679,13 @@ def add_point():
                 valid=True
             else:
                 valid=False
-        if valid:
+        try:
+            sum_abs+1
+            if sum_abs==0:
+                valid=False
+        except:
+            valid=False
+        if valid and sum_abs>0:
             pt.insert(0,[x1,z1,track_move,default[10],default[11],sum_abs])
             print(["mouse track",track_move,sum_abs])
             pt_mode.insert(0,cur_input_mode.get())
@@ -770,11 +776,16 @@ def key_press1(event):
     set_c1()
 
 def key_press2(event):
-    if cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
+    if calibrating_align:
+        set_cal_c2()
+    elif cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
         set_c2()
 
 def key_press3(event):
-    add_point()
+    if calibrating_align:
+        add_align_calibration()
+    else:
+        add_point()
 
 def key_press7(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -914,6 +925,9 @@ def key_press4(event):
 def stop_track():
     global sum_move, default, calibrating, track_angle, measuring, track_move, sum_abs
     print("STOP TRACKING")
+    if type(sum_move)==int:
+        sum_move=ctypes.c_int(0)
+        sum_abs=ctypes.c_int(0)
     GET_TRACK(ctypes.byref(sum_move),ctypes.byref(sum_abs))
     STOP_TRACK()
     sum_move=sum_move.value
@@ -1026,7 +1040,7 @@ valid_mod=valid_mod+[0]*10
 # Change keybind
 curkey=""
 def changehotkey():
-    global curkey
+    global curkey, calibrating_align
     print("CHANGE HOTKEY")
     # unplace
     c1_but.place_forget()
@@ -1042,6 +1056,16 @@ def changehotkey():
     c1_dis.place_forget()
     c2_dis.place_forget()
     add_but.place_forget()
+
+    next_but.place_forget()
+    calibration_label1.place_forget()
+    calibration_label2.place_forget()
+    calibration_label3.place_forget()
+    cal_c2_but.place_forget()
+    cal_add_but.place_forget()
+    cal_return.place_forget()
+    cal_clear.place_forget()
+    calibrating_align=0
     
     for i in range(len(hotkey_desc)):
         bindglobal[i].stop()
@@ -1124,6 +1148,194 @@ changehotkeybut=tk.Button(text="APPLY",padx=3,pady=2,command=hotkeychange)
 changehotkeyreturn=tk.Button(text="RETURN",padx=3,pady=2,command=returncalc)
 changehotkeyreset=tk.Button(text="RESET",padx=3,pady=2,command=hotkeyreset)
 
+# Calibrate align error
+calibrating_align=0
+stronghold_x=0
+stronghold_z=0
+calibrate_list=[]
+error_precision_list=[]
+def calibtrate_align_error():
+    global calibrate_list
+    print("CALIBRATE ALIGN ERROR")
+    # unplace
+    c1_but.place_forget()
+    c2_but.place_forget()
+    x2_inp.place_forget()
+    z2_inp.place_forget()
+    facing_dir.place_forget()
+    pixel_inp.place_forget()
+    pixel_dis.place_forget()
+    track_dis.place_forget()
+    c2_dis.place_forget()
+    add_but.place_forget()
+
+    changehotkeylist.place_forget()
+    changehotkeymod.place_forget()
+    changehotkeylabel.place_forget()
+    changehotkeybut.place_forget()
+    changehotkeyreturn.place_forget()
+    changehotkeyreset.place_forget()
+
+    next_but.place_forget()
+    calibration_label1.place_forget()
+    calibration_label2.place_forget()
+    calibration_label3.place_forget()
+    cal_c2_but.place_forget()
+    cal_add_but.place_forget()
+    cal_return.place_forget()
+    cal_clear.place_forget()
+
+    c1_dis.config(text="Stronghold:")
+    c1_dis.place(x=10,y=25)
+    x1_inp.place(x=100,y=25)
+    z1_inp.place(x=180,y=25)
+    next_but.place(x=280,y=20)
+
+    calibration_label1.config(text="Use version 1.19.10+")
+    calibration_label1.place(x=250,y=125,anchor=tk.CENTER)
+    calibration_label1.lift()
+    calibration_label2.config(text="Create world in creative, activate cheat")
+    calibration_label2.place(x=250,y=150,anchor=tk.CENTER)
+    calibration_label2.lift()
+    calibration_label3.config(text="/locate command copied to clipboard")
+    calibration_label3.place(x=250,y=175,anchor=tk.CENTER)
+    calibration_label3.lift()
+    pyperclip.copy("locate structure stronghold")
+    calibrate_list=[]
+    error_precision_list=[]
+
+    for i in range(len(hotkey_desc)):
+        bindglobal[i].stop()
+    bindglobal[1].start()
+    bindglobal[2].start()
+
+def first_calibration():
+    global calibrating_align, stronghold_x, stronghold_z, x1, x2, z1, z2
+    valid=True
+    try:
+        stronghold_x=int(x1_inp.get())
+    except:
+        valid=False
+        stronghold_x=0
+    try:
+        stronghold_z=int(z1_inp.get())
+    except:
+        valid=False
+        stronghold_z=0
+        
+    if valid:
+        calibrating_align=1
+        x1_inp.place_forget()
+        z1_inp.place_forget()
+        x1_inp.place_forget()
+        next_but.place_forget()
+        
+        c1_dis.place(x=5,y=7)
+        c2_dis.place(x=5,y=37)
+        cal_add_but.place(x=265,y=19)
+        cal_c2_but.place(x=200,y=35)
+        cal_return.place(x=360,y=18,anchor=tk.CENTER)
+        cal_clear.place(x=360,y=55,anchor=tk.CENTER)
+
+        x2,z2=0,0
+        angle=random.random()*math.pi*2
+        x1=round(stronghold_x+100*math.cos(angle),2)
+        z1=round(stronghold_z+100*math.sin(angle),2)
+        c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
+        c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
+
+        calibration_label1.config(text="/tp command copied to clipboard")
+        calibration_label2.config(text="Throw eye, align to the center")
+        calibration_label3.config(text="Copy+Paste coord 2 and add data")
+        pyperclip.copy("tp @s {} 200 {}".format(x1,z1))
+
+dll2=ctypes.CDLL(path("resource/update.dll"))
+ANGLEDIF=dll2.angle_dif_cal
+ANGLEDIF.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double]
+ANGLEDIF.restype=ctypes.c_double
+
+def add_align_calibration():
+    global calibrate_list, x1, x2, z1, z2, error_precision_list
+    print("ADD CALIBRATION")
+    if (x1,z1)!=(x2,z1):
+        angledif=ANGLEDIF(x1,z1,x2,z2,float(stronghold_x),float(stronghold_z))
+
+        dist=((x1-z1)**2+(x2-z2)**2)**0.5
+        error_precision=0.01/dist*0.2339
+        calibrate_list.append(angledif)
+        error_precision_list.append(error_precision)
+
+        cur_error=max(0,angledif**2-error_precision**2)**0.5*12*16
+        total_error=sum(calibrate_list[i]**2 for i in range(len(calibrate_list)))/len(calibrate_list)
+        mean_error_precision=sum(error_precision_list)/len(error_precision_list)
+        std_error=max(0,total_error-mean_error_precision**2)**0.5*12*16
+
+        calibration_label2.config(text="Previous error: {}".format(f'{cur_error:.2f}'))
+        calibration_label3.config(text="Standard error: {}".format(f'{std_error:.2f}'))
+
+        x2,z2=0,0
+        angle=random.random()*math.pi*2
+        x1=round(stronghold_x+100*math.cos(angle),2)
+        z1=round(stronghold_z+100*math.sin(angle),2)
+        c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
+        c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
+        pyperclip.copy("tp @s {} 200 {}".format(x1,z1))
+
+def set_cal_c2():
+    print("CALIBRATION COORD2")
+    global x2,z2
+    try:
+        inp=pyperclip.paste()
+        inp=inp.split(" ")
+        x2=float(inp[0])
+        z2=float(inp[2])
+        c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
+    except:
+        x2,z2=0,0
+        c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
+
+def returncalc2():
+    global calibrating_align, x1, x2, z1, z2
+    
+    next_but.place_forget()
+    calibration_label1.place_forget()
+    calibration_label2.place_forget()
+    calibration_label3.place_forget()
+    cal_c2_but.place_forget()
+    cal_add_but.place_forget()
+    cal_return.place_forget()
+    cal_clear.place_forget()
+
+    if len(calibrate_list)>0:
+        total_error=sum(calibrate_list[i]**2 for i in range(len(calibrate_list)))/len(calibrate_list)
+        mean_error_precision=sum(error_precision_list)/len(error_precision_list)
+        std_error=max(0,total_error-mean_error_precision**2)**0.5*12*16
+        acc_list_dif=[(acc_list[i]-std_error)**2 for i in range(len(acc_list))]
+        cur_error_angle.set(acc_list[acc_list_dif.index(min(acc_list_dif))])
+    
+    applyhotkey()
+    set_mode()
+    calibrating_align=0
+    x1, x2, z1, z2=0,0,0,0
+
+def cal_clear_list():
+    global calibrate_list, error_precision_list
+    calibrate_list=[]
+    error_precision_list=[]
+    calibration_label2.config(text="Throw eye, align to the center")
+    calibration_label3.config(text="Copy+Paste coord 2 and add data")
+    pyperclip.copy("tp @s {} 200 {}".format(x1,z1))
+
+options.add_command(label="Calibrate align error",command=calibtrate_align_error)
+next_but=tk.Button(win,text="NEXT",command=first_calibration,padx=8,pady=3)
+calibration_label1=tk.Label(win,text="")
+calibration_label2=tk.Label(win,text="")
+calibration_label3=tk.Label(win,text="")
+cal_add_but=tk.Button(win,text="ADD",command=add_align_calibration,padx=8,pady=3)
+cal_c2_but=tk.Button(win,text="PASTE",command=set_cal_c2,padx=5,pady=1)
+cal_return=tk.Button(text="APPLY",padx=4,pady=1,command=returncalc2)
+cal_clear=tk.Button(text="CLEAR",padx=4,pady=1,command=cal_clear_list)
+
 # Input Coordinate
 add_but=tk.Button(win,text="ADD",command=add_point,padx=8,pady=3)
 add_but.place(x=265,y=19)
@@ -1164,7 +1376,7 @@ for i in range(9):
 class Result(ctypes.Structure):
     _fields_=[("prob",ctypes.c_double),("ratio",ctypes.c_double),("x",ctypes.c_int),("z",ctypes.c_int)]
 
-# C functions
+# C++ functions
 dll1=ctypes.CDLL(path("resource/prior.dll"))
 PRIOR=dll1.calculate_prior
 PRIOR.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,
@@ -1172,7 +1384,6 @@ PRIOR.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int
                 ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.c_int]
 PRIOR.restype=ctypes.c_int
 
-dll2=ctypes.CDLL(path("resource/update.dll"))
 UPDATE=dll2.update_prob
 UPDATE.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,
                  ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,
@@ -1262,32 +1473,34 @@ def add_prob(n,prior):
         error_precision=math.atan(pt_prec[n]/16/0.3)
         error_dist=0
     elif pt_mode[n]=="Mouse Tracking":
+        error_angle=error_angle+0.01
         error_prec1=math.pi/2/pt[n][3]*0.3
-        k=min(0.05,max(0.02,pt[n][4]/pt[n][3]))
-        error_prec2=k/(2**0.5)*pt[n][5]/pt[n][3]*math.pi/2
+        ndata=int(default[12])
+        k=min(0.05,max(0.02/int(default[12]),pt[n][4]/pt[n][3]))
+        error_prec2=pt[n][5]/pt[n][3]*k*math.pi/2
         error_precision=(error_prec1**2+error_prec2**2)**0.5
     if error_precision==-1000:
         if pt_coord[n]=="Copy+Paste":
-            error_precision=0.01/dist*0.25
+            error_precision=0.01/dist*0.2339
             error_dist=0.3/100
         elif pt_coord[n]=="Copy+Paste (Corner)":
-            error_precision=0.01/dist*0.17
+            error_precision=0.01/dist*0.1654
             error_dist=0.212/100
         elif pt_coord[n]=="Show Coordinate":
-            error_precision=1/dist*0.25
+            error_precision=1/dist*0.2339
             error_dist=0.3
         else:
             if pt_manual[n]=="Show coordinate":
-                error_precision=1/dist*0.25
+                error_precision=1/dist*0.2339
                 error_dist=0.3
             elif pt_manual[n]=="Count minecraft pixel":
-                error_precision=(1/16)/dist*0.25
+                error_precision=(1/16)/dist*0.2339
                 error_dist=0.01875
             elif pt_manual[n]=="Copy+Paste":
-                error_precision=0.01/dist*0.25
+                error_precision=0.01/dist*0.2339
                 error_dist=0.3/100
             else:
-                error_precision=(1/1500)/dist*0.25
+                error_precision=(1/1500)/dist*0.2339
                 error_dist=0.0002
     error_combine=(error_angle**2+error_precision**2)**0.5
     print(["error",error_angle,error_precision,error_combine])
