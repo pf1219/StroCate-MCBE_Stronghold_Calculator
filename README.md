@@ -171,7 +171,7 @@ Following information was gathered using simulation
 ![Figure_1](https://github.com/user-attachments/assets/9d293f01-8ec5-4f7f-8da1-7a5675671380)
   - X axis: Distance from (0,0) in chunks, Y axis: Relative probability of chunk having a village stronghold
 * Correlation between (distance from eye throw) and (probability of stronghold being a closest stronghold)
-Estimated probability of each chunk(distance from first eye throw < 10000) having a stronghold based on simulation data
+* Estimated probability of each chunk(distance from first eye throw < 10000) having a stronghold based on simulation data
 
 ### Calculating stronghold direction
 When you throw eye of ender at (x1,z1), it starts flying from (x1+0.5,z1+0.5)=(a,b) and travels 12 blocks
@@ -201,7 +201,7 @@ Program assumes 2 types of error affect the prediction
   - Estimated using: σ1=arctan(ε1/12/16) (12: Distance eye flies, 16: Number of pixels in a block)
 * Precision error(σ2): How precisely the direction is measured
   - In "Coord+Coord" mode, this is affected by distance between Coordinate 1 and Coordinate 2
-  - Estimated using σ2=arctan(0.01*sqrt(2)/distance)*0.2
+  - Estimated using σ2=0.01/distance*0.2339 (copy+paste), σ2=1/distance*0.2339 (show coordinate)
   - In "Corner+Facing" mode, this is affected by user defined "Pixel error"(ε1)
   - Estimated using σ2=arctan(ε1/16/0.3) (0.3: Distance between the player and block which player is facing)
 * Combined error(σ) is calculated σ=sqrt(σ1^2+σ2^2)
