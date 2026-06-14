@@ -96,7 +96,7 @@ while ender eye is hovering
 * Input coordinate 2
 * Input how many (minecraft) pixels have shifted by using either input box or hotkeys
 * Calculate by either pressing "ADD" button or using hotkey (Default: =)
-* 
+  
 ### Mouse tracking
 <img width="325" height="56" alt="image" src="https://github.com/user-attachments/assets/32a07019-382f-4df9-bc76-0a470d820f42" />
 
