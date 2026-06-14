@@ -155,7 +155,7 @@ If calculator said 100% probability but stronghold wasn't there, consider..,
 Simulated Bedrock Edition stronghold generation multiple times considering
 * Village grid
   - Grid size is 27(pre-1.18.30) / 34(1.18.30+)  chunks in x/z direction
-  - Village can generate in chunk 0~17(pre-1.18.30) / 0~27(1.18.30+) in each grid
+  - Village can generate in chunk ≤17(pre-1.18.30) / ≤27(1.18.30+) in each grid
   - Village generate or doesn't generate according to biome, but that's difficult to simulate
   - Assumed there's 26.7% chance of village generating in each grid
 * Scattered stronghold grid
