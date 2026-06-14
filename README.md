@@ -11,12 +11,11 @@ If you have any question, please DM me in discord @pf1219
 * Multiple input method available
 * Calculates probability that stronghold is within N chunks from each chunk
 
-## How to Use
-### Game Setting
+## Game Setting
 * Turn on "Enable Copy Coordinate UI", in version 1.20 or higher
   - You can find this option in Settings → General → Creator → Creator Settings → Enable Copy Coordinate UI
 
-### Eye Allginment
+## Eye Allginment
 * Information in this section is by TyGer. (https://www.youtube.com/@tyger2k)
 * Borrowed image from their video. (https://www.youtube.com/watch?v=ktuEf4qcdt8)
 
@@ -29,30 +28,30 @@ If you have any question, please DM me in discord @pf1219
 /tp @p ~ ~ ~ facing @e [type= Eye_of_Ender_signal]
 while ender eye is hovering
 
-### Coordinate input
+## How to input coordinates
 * There are 4 ways you can input coordinates
 
-#### Copy+Paste
+### Copy+Paste
 * This is available in version 1.20+ and you should turn on "Enable Copy Coordinate UI".
 * Copy coordinate (Default: CTRL + ALT + C)
 * Paste coordinate by either pressing "PASTE" button or using hotkey (Default: [ for coordinate 1, ] for coordinate 2)
 
-#### Copy+Paste (corner)
+### Copy+Paste (corner)
 * This is identical with "Copy+Paste", but coordinate 1 must be in the corner of the block
   (fractional part of the coordinate should be 0.30 or 0.70)
 * Using this makes measurement about 30% more accurate
 
-#### Show coordinates
+### Show coordinates
 * This works in all versions, but for version 1.20+, using "Copy+Paste" is recommended as it is far more accurate
 * You should turn on "Show coordinates" on the settings
 * Paste coordinate using hotkey (Default: [ for coordinate 1, ] for coordinate 2)
 
-#### Manual input
+### Manual input
 * Manualy input coordinate by typing on the input box
 * It doesn't have to be integers, so you can count pixels and write more accurate coordinates
 
-### Input
-#### Coord+Coord
+## How to input measurement
+### Coord+Coord
 ![image](https://github.com/user-attachments/assets/560213de-383a-49ad-9e6b-70c1d547045e)
 * Stand on the relatively flat area
 * Throw eye of ender and allign crosshair
@@ -64,7 +63,7 @@ while ender eye is hovering
 * Input coordinate 2
 * Calculate by either pressing "ADD" button or using hotkey (Default: =)
 
-#### Corner+Facing
+### Corner+Facing
 ![image](https://github.com/user-attachments/assets/66b8774d-bf5c-489b-8ebc-5132ef9cf707)
 * Surround yourself with 4 blocks
 * Throw eye of ender and stand at the corner in that direction
@@ -82,7 +81,7 @@ while ender eye is hovering
   - This value should be within 0 and 8
 * Calculate by either pressing "ADD" button or using hotkey (Default: =)
 
-#### Pixel perfect
+### Pixel perfect
 <img width="389" height="66" alt="image" src="https://github.com/user-attachments/assets/f8ecce7a-976a-4602-a645-8a876e6e44b2" />
 
 * Stand on the relatively flat area
@@ -98,7 +97,7 @@ while ender eye is hovering
 * Input how many (minecraft) pixels have shifted by using either input box or hotkeys
 * Calculate by either pressing "ADD" button or using hotkey (Default: =)
 * 
-#### Mouse tracking
+### Mouse tracking
 <img width="325" height="56" alt="image" src="https://github.com/user-attachments/assets/32a07019-382f-4df9-bc76-0a470d820f42" />
 
 * You must calibrate first before you measure the eye
@@ -109,8 +108,8 @@ while ender eye is hovering
 * Press F10
 * Calculate by either pressing "ADD" button or using hotkey (Default: =)
 
-### Settings
-#### Eye align error
+## Settings
+### Eye align error
 * Set this value based on how accurate you are in aligning crosshair with eye of ender.
   - Smaller value → Assumes accurate crosshair alignment → More confident prediction
   - Bigger value → Assumes less accurate crosshair alignment → Less confident prediction
@@ -120,7 +119,7 @@ while ender eye is hovering
   - 1: You can align crosshair within center third of the ender eye
   - 4(Maximum): You can align crosshair within ender eye
 
-#### Pixel count error
+### Pixel count error
 * This setting matters only if your input mode is "Corner+Facing"
 * Set this value based on how accurate you can measure how many (minecraft) pixel the crosshair is from the vertex.
   - Smaller value → Assumes accurate measurement → More confident prediction
@@ -130,22 +129,22 @@ while ender eye is hovering
   - 0.03: You can count (minecraft) pixels and round to 1 decimal point
   - 0.3(Maximum): You can count (minecraft) pixels and round to nearest integer
 
-#### Pixel perfect error
+### Pixel perfect error
 * This setting matters only if your input mode is "Pixel perfect"
 * Set this value based on how accurate you can measure pixel shift.
 
-#### Manual coord input
+### Manual coord input
 * Count monitor pixel: You count (monitor) pixel and write coordinate
 * Copy+Paste: You copy coordinate (Default: CTRL + ALT + C) and write coordinate, in 2 decimal place precision
 * Count minecraft pixel: You count (minecraft) pixel and write cooridnate
 * Show coordinate: You write coordinate in integer
 
-#### Probability within
+### Probability within
 * Display probability that stronghold is within N chunks from candidate chunk
 * This is supported because in Bedrock Edition, most near stronghold generate under the village. If you can find village within your render distance, you can easily locate stronghold with Sprinkz strategy
 * It's recommended to set this value according to your render distance
 
-### Troubleshooting
+## Troubleshooting
 If calculator said 100% probability but stronghold wasn't there, consider..,
 * You were obstructed by terrain while measuring direction with "Coord+Coord" input method
 * Each eye directed diffrent stronghold
@@ -155,8 +154,8 @@ If calculator said 100% probability but stronghold wasn't there, consider..,
 ### Calculating prior probability
 Simulated Bedrock Edition stronghold generation multiple times considering
 * Village grid
-  - Grid size is 34 chunks in x/z direction
-  - Village can generate in chunk 0~27 in each grid
+  - Grid size is 27(pre-1.18.30) / 34(1.18.30+)  chunks in x/z direction
+  - Village can generate in chunk 0~17(pre-1.18.30) / 0~27(1.18.30+) in each grid
   - Village generate or doesn't generate according to biome, but that's difficult to simulate
   - Assumed there's 26.7% chance of village generating in each grid
 * Scattered stronghold grid
@@ -168,16 +167,11 @@ Simulated Bedrock Edition stronghold generation multiple times considering
   - https://github.com/Earthcomputer/bedrockified/blob/master/src/main/java/net/earthcomputer/bedrockified/BedrockStrongholdStructure.java
 
 Following information was gathered using simulation
-* How often nearest stronghold is village stronghold or scattered stronghold
-  - Nearest stronghold was village stronghold in 80.9% of the cases, scattered stronghold in 19.1% of the cases
-* How distance from (0,0) and probability of having a village stronghold correlated
+* Correlation between (distance from (0,0)) and (probability of chunk having a village stronghold)
 ![Figure_1](https://github.com/user-attachments/assets/9d293f01-8ec5-4f7f-8da1-7a5675671380)
   - X axis: Distance from (0,0) in chunks, Y axis: Relative probability of chunk having a village stronghold
-* How distance from (0,0) and probability of having a scattered stronghold correlated
-![Figure_2](https://github.com/user-attachments/assets/2594939e-aee5-4d31-9ce5-a5cd6043370c)
-  - X axis: Distance from (0,0) in chunks, Y axis: Relative probability of chunk having a scattered stronghold
-
-Estimated probability of each chunk(distance from (0,0) < 4000) having a stronghold based on simulation data
+* Correlation between (distance from eye throw) and (probability of stronghold being a closest stronghold)
+Estimated probability of each chunk(distance from first eye throw < 10000) having a stronghold based on simulation data
 
 ### Calculating stronghold direction
 When you throw eye of ender at (x1,z1), it starts flying from (x1+0.5,z1+0.5)=(a,b) and travels 12 blocks
