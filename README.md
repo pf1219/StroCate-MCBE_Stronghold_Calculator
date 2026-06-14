@@ -1,5 +1,6 @@
 # /StroCate: MCBE Stronghold Calculator
 Stronghold location calculator for Minecraft Bedrock Edition
+
 If you have any question, please DM me in discord @pf1219
 
 ## Features
