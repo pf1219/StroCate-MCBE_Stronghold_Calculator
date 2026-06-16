@@ -334,16 +334,16 @@ int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, in
     for(int i=0 ; i<size2 ; i++){
         if(prob[i]>0){
             gridres[ngrid].prob=prob[i];
-            gridres[ngrid].x=xmean[i]/prob[i];
-            gridres[ngrid].z=zmean[i]/prob[i];
-            gridres[ngrid].ratio=1;
+            gridres[ngrid].x=round(xmean[i]/prob[i]);
+            gridres[ngrid].z=round(zmean[i]/prob[i]);
+            gridres[ngrid].ratio=i;
             ngrid=ngrid+1;
         }
     }
 
     sort(gridres, gridres+ngrid, [](const Result& a, const Result& b) {
         return a.prob > b.prob;
-    });
+    }); 
 
     return(ngrid);
 }
