@@ -146,9 +146,9 @@ while ender eye is hovering
 
 ## Troubleshooting
 If calculator said 100% probability but stronghold wasn't there, consider..,
-* You were obstructed by terrain while measuring direction with "Coord+Coord" input method
-* Each eye directed diffrent stronghold
-* You set too low value in "align errror" or "pixel error" (=Your measurement were not accurate enough)
+* You were obstructed by terrain while measuring direction with "Coord+Coord" or "Pixel Perfect" input method
+* Each eye directed to diffrent stronghold
+* You set too low value in "align errror", "pixel error" or "pixel perfect error" (=Your measurement were not accurate enough)
 
 ## Methodology
 ### Calculating prior probability
