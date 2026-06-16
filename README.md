@@ -41,10 +41,11 @@ while ender eye is hovering
   (fractional part of the coordinate should be 0.30 or 0.70)
 * Using this makes measurement about 30% more accurate
 
-### Show coordinates
+### Read coordinates
 * This works in all versions, but for version 1.20+, using "Copy+Paste" is recommended as it is far more accurate
 * You should turn on "Show coordinates" on the settings
 * Paste coordinate using hotkey (Default: [ for coordinate 1, ] for coordinate 2)
+* App will read your screen and automatically input coordinate
 
 ### Manual input
 * Manualy input coordinate by typing on the input box
@@ -108,7 +109,7 @@ while ender eye is hovering
 * Press F10
 * Calculate by either pressing "ADD" button or using hotkey (Default: =)
 
-## Settings
+## Settings: Calibration
 ### Eye align error
 * Set this value based on how accurate you are in aligning crosshair with eye of ender.
   - Smaller value → Assumes accurate crosshair alignment → More confident prediction
@@ -133,16 +134,30 @@ while ender eye is hovering
 * This setting matters only if your input mode is "Pixel perfect"
 * Set this value based on how accurate you can measure pixel shift.
 
+## Settings: Input
+### Input mode, Coordinate input
+* This setting is explained in detail in previous section ("How to input measurement", "How to input coordinate")
+
 ### Manual coord input
 * Count monitor pixel: You count (monitor) pixel and write coordinate
-* Copy+Paste: You copy coordinate (Default: CTRL + ALT + C) and write coordinate, in 2 decimal place precision
+* Copy coordinate UI: You copy coordinate (Default: CTRL + ALT + C) and write coordinate, in 2 decimal place precision
 * Count minecraft pixel: You count (minecraft) pixel and write cooridnate
 * Show coordinate: You write coordinate in integer
 
+## Settings: Display
 ### Probability within
 * Display probability that stronghold is within N chunks from candidate chunk
 * This is supported because in Bedrock Edition, most near stronghold generate under the village. If you can find village within your render distance, you can easily locate stronghold with Sprinkz strategy
 * It's recommended to set this value according to your render distance
+* If you select "Village grid", probability each village grid having stronghold will be displayed
+
+## Settings: Preset
+* You can save current settings by clicking "Save current settings"
+  - Mouse tracking calibration, highlight color will not be saved.
+  - Other settings (measurement error, input mode, game version, probability within, search radius etc) will be saved
+  - Name of the preset will be "(Version)/(Input mode) (Number)" by default.
+  - You can change this by editing "StroCate_setting.csv", which is located in same directory with the exe file.
+* You can load saved settings by using "Load preset" menu.
 
 ## Troubleshooting
 If calculator said 100% probability but stronghold wasn't there, consider..,
