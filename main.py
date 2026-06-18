@@ -29,7 +29,7 @@ distprob16=[float(data[i][0]) for i in range(len(data))]
 
 # Import setting
 # 0 align, 1 pixel, 2 pixper, 3 mode, 4 coordinate, 5 str within, 6 mean, 7 version, 8 prior, 9 search rad
-# 10~13 mouse track, 14 manual input
+# 10~12 mouse track, 13 highlight color, 14 manual input
 preset_name=[]
 preset_default=[]
 if "StroCate_setting.csv" in os.listdir():
@@ -37,7 +37,7 @@ if "StroCate_setting.csv" in os.listdir():
     default=setting_data[0]
 else:
     setting_data=[]
-    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Hide","1.18.30+","Simulation","10000",0,0,0,0,"Show coordinate"]
+    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Show","1.18.30+","Simulation","10000",0,0,0,0,"Show coordinate"]
 while len(default)<14:
     default.append(0)
 for i in range(10,14):
@@ -108,9 +108,12 @@ win.geometry("400x320+"+str(move_x)+"+30")
 win.resizable(False,False)
 win.attributes("-topmost",True)
 win.iconbitmap(path("resource/icon.ico"))
-ft=font.Font(family="Malgun Gothic",size=10)
-ft2=font.Font(family="Malgun Gothic",size=10,underline=True)
-ft_small=font.Font(family="Malgun Gothic",size=8)
+
+sys_default = font.nametofont("TkDefaultFont")
+sys_family = sys_default.cget("family")
+ft=font.Font(family=sys_family,size=10)
+ft2=font.Font(family=sys_family,size=10,underline=True)
+ft_small=font.Font(family=sys_family,size=8)
 win.option_add("*Font",ft)
 
 # screen reading setup
@@ -239,7 +242,7 @@ hotkeybar.add_cascade(label="Hotkeys",menu=hotkeylist)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.10.0 (2026.06.15.)")
+about.add_cascade(label="Version 2.10.1 (2026.06.18.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -250,7 +253,7 @@ about.add_cascade(label="Open Youtube",command=open_youtube)
 
 # Error options
 ## Align
-acc_list=[0.03,0.05,0.075,0.1,0.2,0.3,0.4,0.5,0.75,1.0,1.5,2.0,4.0]
+acc_list=[0.03,0.05,0.075,0.1,0.15,0.2,0.25,0.3,0.4,0.5,0.75,1.0,1.5,2.0,2.5,3.0,4.0]
 cur_error_angle=tk.DoubleVar()
 cur_error_angle.set(float(default[0]))
 alignerrormenu=tk.Menu(calibrationbar,tearoff=False)
@@ -268,7 +271,7 @@ for i in range(len(pixel_list)):
     pixelerrormenu.add_radiobutton(label=pixel_list[i],variable=cur_error_pixel,value=pixel_list[i],command=set_infobar)
 
 ## Pixel Perfect
-pixel_perfect_list=[0.03,0.06,0.1,0.2,0.3]
+pixel_perfect_list=[0.03,0.06,0.075,0.1,0.15,0.2,0.25,0.3]
 cur_pixel_perfect=tk.DoubleVar()
 cur_pixel_perfect.set(float(default[2]))
 pixelperfectmenu=tk.Menu(calibrationbar,tearoff=False)
@@ -401,7 +404,6 @@ cinpmenu.add_radiobutton(label="Copy+Paste (corner)",value="Copy+Paste (Corner)"
 cinpmenu.add_radiobutton(label="Read coordinate",value="Show Coordinate",variable=cur_cinp,command=set_mode)
 cinpmenu.add_radiobutton(label="Maunal input",value="Manual Input",variable=cur_cinp,command=set_mode)
 
-
 ## Manual Input
 manual_input_list=["Count monitor pixel","Copy coordinate UI","Count minecraft pixel","Show coordinate"]
 cur_manual_input=tk.StringVar()
@@ -412,6 +414,42 @@ manualinputmenu=tk.Menu(inputbar,tearoff=False)
 inputbar.add_cascade(label="Manual coord input",menu=manualinputmenu)
 for i in range(len(manual_input_list)):
     manualinputmenu.add_radiobutton(label=manual_input_list[i],variable=cur_manual_input,value=manual_input_list[i],command=set_infobar)
+
+## input help
+inputbar.add_separator()
+inputmodehelp=tk.Menu(inputbar,tearoff=False)
+inputbar.add_cascade(label="Help",menu=inputmodehelp)
+
+inputcchelp=tk.Menu(inputmodehelp,tearoff=False)
+inputmodehelp.add_cascade(label="Coord+Coord",menu=inputcchelp)
+inputcchelp.add_cascade(label="1. Input Coord 1")
+inputcchelp.add_cascade(label="2. Align crosshair with the center of the eye")
+inputcchelp.add_cascade(label="3. Walk forward")
+inputcchelp.add_cascade(label="4. Input Coord 2")
+
+inputcfhelp=tk.Menu(inputmodehelp,tearoff=False)
+inputmodehelp.add_cascade(label="Corner+Facing",menu=inputcfhelp)
+inputcfhelp.add_cascade(label="1. Throw an eye and face its direction")
+inputcfhelp.add_cascade(label="2. Wedge into a block corner")
+inputcfhelp.add_cascade(label="3. Input Coord 1")
+inputcfhelp.add_cascade(label="4. Align crosshair with the center of the eye")
+inputcfhelp.add_cascade(label="5. Look straight down")
+inputcfhelp.add_cascade(label="6. Input facing direction and pixel offset")
+
+inputpfhelp=tk.Menu(inputmodehelp,tearoff=False)
+inputmodehelp.add_cascade(label="Pixel Perfect",menu=inputpfhelp)
+inputpfhelp.add_cascade(label="1. Input Coord 1")
+inputpfhelp.add_cascade(label="2. Align crosshair with the left edge of the eye")
+inputpfhelp.add_cascade(label="3. Strafe right")
+inputpfhelp.add_cascade(label="4. Input Coord 2")
+inputpfhelp.add_cascade(label="5. Throw an eye and input the pixel shift")
+
+inputmthelp=tk.Menu(inputmodehelp,tearoff=False)
+inputmodehelp.add_cascade(label="Mouse Tracking",menu=inputmthelp)
+inputmthelp.add_cascade(label="1. Input Coord 1")
+inputmthelp.add_cascade(label="2. Face exactly positive X direction and press F9")
+inputmthelp.add_cascade(label="3. Align crosshair with the center of the eye")
+inputmthelp.add_cascade(label="4. Press F10")
 
 ## Mouse Track display
 if default[12]>0:
@@ -473,9 +511,9 @@ for i in range(len(highcol_list)):
 def set_version():
     for i in range(len(pt)):
         if i==0:
-            add_prob(i,True)
+            add_prob(len(pt)-i-1,True)
         else:
-            add_prob(i,False)
+            add_prob(len(pt)-i-1,False)
     display()
     set_infobar()
     
@@ -495,9 +533,9 @@ settingbar.add_cascade(label="Prior probability",menu=priormenu)
 def set_prior(disp):
     for i in range(len(pt)):
         if i==0:
-            add_prob(i,True)
+            add_prob(len(pt)-i-1,True)
         else:
-            add_prob(i,False)
+            add_prob(len(pt)-i-1,False)
     if disp:
         display()
 priormenu.add_radiobutton(label="Based on simulation",value="Simulation",variable=cur_prior,command=partial(set_prior,1))
@@ -608,7 +646,7 @@ def add_point():
             pt_pixel.insert(0,0)
             pt_pixel_err.insert(0,0)
             pt_manual.insert(0,cur_manual_input.get())
-            listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
+            listdata.insert(0,'cc/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
             if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
                 c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
@@ -670,7 +708,7 @@ def add_point():
                 pt.insert(0,[x1,z1,x2,z2])
                 pt_mode.insert(0,cur_input_mode.get())
                 pt_err.insert(0,cur_error_angle.get())
-                listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2-x1:.2f}'+"/"+f'{z2-z1:.2f}')
+                listdata.insert(0,'cf/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2-x1:.2f}'+"/"+f'{z2-z1:.2f}')
                 facing_dir.set("Facing")
                 pixel_inp.delete(0,tk.END)
                 pixel_inp.insert(0,"Pixel")
@@ -701,22 +739,31 @@ def add_point():
                 valid=True
             else:
                 valid=False
+        valid_pixel=True
         try:
             npixel=float(pixel_inp.get())
             if npixel<=0:
-                valid=False
+                valid_pixel=False
         except:
-            valid=False
+            valid_pixel=False
         if (x1,z1)!=(x2,z2) and valid:
             pt.insert(0,[x1,z1,x2,z2])
-            pt_mode.insert(0,cur_input_mode.get())
+            if valid_pixel:
+                pt_mode.insert(0,cur_input_mode.get())
+                pt_pixel.insert(0,npixel)
+                pt_pixel_err.insert(0,cur_pixel_perfect.get())
+            else:
+                pt_mode.insert(0,"Coord+Coord")
+                pt_pixel.insert(0,0)
+                pt_pixel_err.insert(0,0)
             pt_err.insert(0,cur_error_angle.get())
             pt_prec.insert(0,0)
             pt_coord.insert(0,cur_cinp.get())
-            pt_pixel.insert(0,npixel)
-            pt_pixel_err.insert(0,cur_pixel_perfect.get())
             pt_manual.insert(0,cur_manual_input.get())
-            listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}'+"/"+str(npixel))
+            if valid_pixel:
+                listdata.insert(0,'pf/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}'+"/"+str(npixel))
+            else:
+                listdata.insert(0,'cc/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+f'{x2:.0f}'+","+f'{z2:.0f}')
             x1,x2,z1,z2=0,0,0,0
             pixel_inp.delete(0,tk.END)
             if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
@@ -757,7 +804,7 @@ def add_point():
             pt_pixel.insert(0,0)
             pt_pixel_err.insert(0,cur_pixel_perfect.get())
             pt_manual.insert(0,cur_manual_input.get())
-            listdata.insert(0,str(cur_error_angle.get())+'/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+str(round(track_angle)))
+            listdata.insert(0,'mt/'+f'{x1:.0f}'+","+f'{z1:.0f}'+"/"+str(round(track_angle)))
             x1,x2,z1,z2,track_move,track_angle,sum_abs=0,0,0,0,0,0,0
             if cur_cinp.get()=="Copy+Paste" or cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Show Coordinate":
                 c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
@@ -789,9 +836,9 @@ def del_point():
         lencand=0
         for i in range(len(pt)):
             if i==0:
-                add_prob(i,True)
+                add_prob(len(pt)-i-1,True)
             else:
-                add_prob(i,False)
+                add_prob(len(pt)-i-1,False)
         display()
     except:
         pass
@@ -836,18 +883,21 @@ bg.gbind("<KeyRelease>",clear_input_buffer())
 
 def key_press1(event):
     set_c1()
+    clear_input_buffer()
 
 def key_press2(event):
     if calibrating_align:
         set_cal_c2()
     elif cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
         set_c2()
+    clear_input_buffer()
 
 def key_press3(event):
     if calibrating_align:
         add_align_calibration()
     else:
         add_point()
+    clear_input_buffer()
 
 def key_press7(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -859,6 +909,7 @@ def key_press7(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0.5")
+    clear_input_buffer()
 
 def key_press8(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -870,6 +921,7 @@ def key_press8(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0")
+    clear_input_buffer()
 
 def key_press9(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -881,6 +933,7 @@ def key_press9(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0.1")
+    clear_input_buffer()
 
 def key_press10(event):
     if cur_input_mode.get()=="Pixel Perfect":
@@ -892,6 +945,7 @@ def key_press10(event):
         except:
             pixel_inp.delete(0,tk.END)
             pixel_inp.insert(0,"0")
+    clear_input_buffer()
 
 # Dig spot
 def key_press11(event):
@@ -932,6 +986,7 @@ def key_press11(event):
         labels[8][1].config(text="( {} , {} )".format(sign1,sign2),fg="#000000")
         labels[8][2].config(text="SH Dig",fg="#000000")
         labels[8][3].config(text="")
+    clear_input_buffer()
 
 def key_press12(event):
     coords=READCOORD(sw,sh,debug,0)
@@ -941,9 +996,11 @@ def key_press12(event):
         labels[8][1].config(text="({},{})".format(btres[2],btres[3]),fg="#000000")
         labels[8][2].config(text="({},{})".format(btres[4],btres[5]),fg="#000000")
         labels[8][3].config(text="BT Dig",fg="#000000")
+    clear_input_buffer()
 
 def key_press13(event):
     display()
+    clear_input_buffer()
     
 saved_coord=[0,0,0]
 def key_press14(event):
@@ -955,16 +1012,21 @@ def key_press14(event):
     labels[8][1].config(text="")
     labels[8][2].config(text="Saved Coord",fg="#000000")
     labels[8][3].config(text="")
+    clear_input_buffer()
+    
 def key_press15(event):
     labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]),fg="#000000")
     labels[8][1].config(text="")
     labels[8][2].config(text="Saved Coord",fg="#000000")
     labels[8][3].config(text="")
+    clear_input_buffer()
+    
 def key_press16(event):
     curinpind=input_mode_list.index(cur_input_mode.get())
     curinpind=(curinpind+1)%4
     cur_input_mode.set(input_mode_list[curinpind])
     set_mode()
+    clear_input_buffer()
 
 # Mouse tracking
 sum_move=ctypes.c_int(0)
@@ -983,6 +1045,7 @@ def start_track():
         measuring=2
 def key_press4(event):
     start_track()
+    clear_input_buffer()
 
 def stop_track():
     global sum_move, default, calibrating, track_angle, measuring, track_move, sum_abs
@@ -1017,6 +1080,7 @@ def stop_track():
         track_dis.config(text="Face pos X, Press F9")
 def key_press5(event):
     stop_track()
+    clear_input_buffer()
 
 # Iconify
 def key_press6(event):
@@ -1427,7 +1491,6 @@ cal_c2_but=tk.Button(win,text="PASTE",command=set_cal_c2,padx=5,pady=1)
 cal_return=tk.Button(text="APPLY",padx=4,pady=1,command=returncalc2)
 cal_clear=tk.Button(text="CLEAR",padx=4,pady=1,command=cal_clear_list)
 
-
 # Calibration option help
 calibrationbar.add_separator()
 calibrationhelp=tk.Menu(calibrationbar,tearoff=False)
@@ -1437,10 +1500,16 @@ helpeye=tk.Menu(calibrationhelp,tearoff=False)
 calibrationhelp.add_cascade(label="Eye allign error",menu=helpeye)
 helpeye.add_cascade(label="(Affects all mode)")
 helpeye.add_cascade(label="(How accurate you can allign cursor to the eye)")
+helpeye.add_cascade(label="(Pre-1.21.100)")
 helpeye.add_cascade(label="0.03: Monitor pixel perfect")
 helpeye.add_cascade(label="0.3: Minecraft pixel perfect")
 helpeye.add_cascade(label="1: Within center third of the eye")
 helpeye.add_cascade(label="4: Within the eye")
+helpeye.add_cascade(label="(1.21.100+)")
+helpeye.add_cascade(label="0.03: Monitor pixel perfect")
+helpeye.add_cascade(label="0.15: Minecraft pixel perfect")
+helpeye.add_cascade(label="0.5: Within center third of the eye")
+helpeye.add_cascade(label="2: Within the eye")
 
 helppixel=tk.Menu(calibrationhelp,tearoff=False)
 calibrationhelp.add_cascade(label="Pixel count error",menu=helppixel)
@@ -1454,9 +1523,14 @@ helppf=tk.Menu(calibrationhelp,tearoff=False)
 calibrationhelp.add_cascade(label="Pixel perfect error",menu=helppf)
 helppf.add_cascade(label="(Affects pixel perfect mode)")
 helppf.add_cascade(label="(How accurate you can measure pixel shift)")
+helppf.add_cascade(label="(Pre-1.21.100)")
 helppf.add_cascade(label="0.03: Count pixel shift to one decimal place")
+helppf.add_cascade(label="0.075: Count pixel shift to nearest quarter")
 helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
-
+helppf.add_cascade(label="(1.21.100+)")
+helppf.add_cascade(label="0.03: Count pixel shift to monitor pixel perfect")
+helppf.add_cascade(label="0.075: Count pixel shift to nearest half")
+helppf.add_cascade(label="0.15: Count pixel shift to nearest integer")
 
 # Input Coordinate
 add_but=tk.Button(win,text="ADD",command=add_point,padx=8,pady=3)
@@ -1536,7 +1610,7 @@ PROBWITHIN3.restype=ctypes.c_int
 
 
 VILLAGEGRID=dll2.village_grid
-VILLAGEGRID.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,ctypes.POINTER(Result)]
+VILLAGEGRID.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,ctypes.POINTER(Result),ctypes.POINTER(ctypes.c_double)]
 VILLAGEGRID.restype=ctypes.c_int
 
 # precalculated lists
@@ -1632,7 +1706,10 @@ def add_prob(n,prior):
         lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
     elif pt_mode[n]=="Pixel Perfect":
         newver=int(game_version.get()=="1.21.100+")
-        lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n],error_dist,newver,a_pdf,len(pdf),res,lencand,info)
+        if newver:
+            lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n],error_dist,1,a_pdf,len(pdf),res,lencand,info)
+        else:
+            lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n]*2,error_dist,0,a_pdf,len(pdf),res,lencand,info)
         print(["PF ERROR",info[19],info[20],info[21],info[22]])
     elif pt_mode[n]=="Mouse Tracking":
         x2=x1+math.cos(pt[n][2]/pt[n][3]*math.pi/2)*10
@@ -1641,7 +1718,7 @@ def add_prob(n,prior):
 
     end_time=time.time()
     print(["CALCULATION TIME",end_time-start_time])
-    print(["info"]+info[:4])
+    print(["info",lencand]+info[:4])
 
 # Display
 def display():
@@ -1675,7 +1752,7 @@ def display():
         OutputArrayType=Result*maxchunk
         gridres=OutputArrayType()
 
-        lengrid=VILLAGEGRID(int(pt[-1][0]),int(pt[-1][1]),gridlimit,int(prev_layout),res,lencand,gridres)
+        lengrid=VILLAGEGRID(int(pt[-1][0]),int(pt[-1][1]),gridlimit,int(prev_layout),res,lencand,gridres,info)
 
         if cur_dismean.get()=="Show":
             ndis=min(8,lengrid)
