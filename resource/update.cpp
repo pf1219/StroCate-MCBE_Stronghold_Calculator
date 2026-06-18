@@ -285,16 +285,18 @@ double prob_within2(int x, int z, int pc, Result* res, int lencand){
 }
 
 extern "C" __declspec(dllexport)
-int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, int ncand, Result* gridres){
+int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, int ncand, Result* gridres, double* info){
     int grid_x;
     int grid_z;
+    int chunk_x=(x<0) ? (x-15)/16 : x/16;
+    int chunk_z=(z<0) ? (z-15)/16 : z/16;
     if(prev_layout){
-        grid_x=int(x/16/27);
-        grid_z=int(z/16/27);
+        grid_x=(chunk_x<0) ? (chunk_x-26)/27 : chunk_x/27;
+        grid_z=(chunk_z<0) ? (chunk_z-26)/27 : chunk_z/27;
     }
     else{
-        grid_x=int(x/16/34);
-        grid_z=int(z/16/34);
+        grid_x=(chunk_x<0) ? (chunk_x-33)/34 : chunk_x/34;
+        grid_z=(chunk_z<0) ? (chunk_z-33)/34 : chunk_z/34;
     }
     int size=(grid_within*2+1);
     int size2=size*size;
@@ -310,8 +312,10 @@ int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, in
         int curz=res[i].z;
         if(prev_layout){
             if(((curx%27)+27)%27<=17 && ((curz%27)+27)%27<=17){
-                int curgridx=curx/27-minx;
-                int curgridz=curz/27-minz;
+                int curgridx=(curx<0) ? (curx-26)/27 : curx/27;
+                curgridx -= minx;
+                int curgridz=(curz<0) ? (curz-26)/27 : curz/27;
+                curgridz -= minz;
                 int ind=curgridx*size+curgridz;
                 prob[ind] += res[i].prob;
                 xmean[ind] += res[i].prob*(curx*16+4);
@@ -320,8 +324,10 @@ int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, in
         }
         else{
             if(((curx%34)+34)%34<=27 && ((curz%34)+34)%34<=27){
-                int curgridx=curx/34-minx;
-                int curgridz=curz/34-minz;
+                int curgridx=(curx<0) ? (curx-33)/34 : curx/34;
+                curgridx -= minx;
+                int curgridz=(curz<0) ? (curz-33)/34 : curz/34;
+                curgridz -= minz;
                 int ind=curgridx*size+curgridz;
                 prob[ind] += res[i].prob;
                 xmean[ind] += res[i].prob*(curx*16+4);

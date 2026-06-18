@@ -12,8 +12,8 @@ struct Result{
 
 extern "C" __declspec(dllexport)
 int calculate_prior(int x1, int z1, int str_within, int prev_layout, int simul, double* vilprob, int nvilprob, Result* res, double* info, double* distprob, int ndistprob){
-    int cur_x=x1/16;
-    int cur_z=z1/16;
+    int cur_x=(x1<0) ? (x1-15)/16 : x1/16;
+    int cur_z=(z1<0) ? (z1-15)/16 : z1/16;
     int ncand=0;
     double sumprob=0;
 
