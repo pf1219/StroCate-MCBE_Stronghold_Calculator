@@ -356,8 +356,8 @@ int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, in
 
 extern "C" __declspec(dllexport)
 int prob_within3(int x1, int z1, int str_within, int pc2c, Result* res, int lencand, Result* withinres, double* info){
-    int cx1=x1/16;
-    int cz1=z1/16;
+    int cx1=(x1<0) ? (x1-15)/16 : x1/16;
+    int cz1=(z1<0) ? (z1-15)/16 : z1/16;
     int chunk_within=ceil(str_within/16);
     int mx=cx1-chunk_within;
     int Mx=cx1+chunk_within;
@@ -480,4 +480,63 @@ double angle_dif_cal(double x1, double z1, double x2, double z2, double strx, do
     double angledif=acos(val);
 
     return(angledif);
+}
+
+extern "C" __declspec(dllexport)
+double if_vil_prob(int x, int z, int prev_layout, Result* res, int lencand, double* info){
+    double prob_in=0.0;
+    double prob_not=0.0;
+    double base_prob, likelihood;
+    int gridx, gridz, cur_gridx, cur_gridz, curx, curz;
+    int found=0;
+
+    if(prev_layout){
+        base_prob=1.0/18.0/18.0*0.267;
+        gridx=(x<0) ? (x-26)/27 : x/27;
+        gridz=(z<0) ? (z-26)/27 : z/27;
+    }
+    else{
+        base_prob=1.0/28.0/28.0*0.267;
+        gridx=(x<0) ? (x-33)/34 : x/34;
+        gridz=(z<0) ? (z-33)/34 : z/34;
+    }
+    info[4]=base_prob;
+
+    for(int i=0 ; i<lencand ; i++){
+        curx=res[i].x;
+        curz=res[i].z;
+        if(found==0 && curx==x && curz==z){
+            found=1;
+            likelihood=res[i].ratio+(1-res[i].ratio)*base_prob;
+            prob_in += res[i].prob*likelihood;
+        }
+        else if(res[i].ratio>0){
+            if(prev_layout){
+                cur_gridx=(curx<0) ? (curx-26)/27 : curx/27;
+                cur_gridz=(curz<0) ? (curz-26)/27 : curz/27;
+            }
+            else{
+                cur_gridx=(curx<0) ? (curx-33)/34 : curx/34;
+                cur_gridz=(curz<0) ? (curz-33)/34 : curz/34;
+            }
+            if(cur_gridx==gridx && cur_gridz==gridz){
+                likelihood=(1-res[i].ratio)*base_prob;
+            }
+            else{
+                likelihood=base_prob;
+            }
+            prob_not += res[i].prob*likelihood;
+        }
+        else{
+            prob_not += res[i].prob*base_prob;
+        }
+    }
+
+    info[5]=prob_in;
+    info[6]=prob_not;
+    double res_prob;
+    if(prob_in+prob_not==0){res_prob=0;}
+    else{res_prob=prob_in/(prob_in+prob_not);}
+
+    return(res_prob);
 }
