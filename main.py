@@ -133,6 +133,15 @@ debug=OutputArrayType()
 OutputArrayType=ctypes.c_int*6
 btres=OutputArrayType()
 
+# dll
+class Result(ctypes.Structure):
+    _fields_=[("prob",ctypes.c_double),("ratio",ctypes.c_double),("x",ctypes.c_int),("z",ctypes.c_int)]
+
+dll2=ctypes.CDLL(path("resource/update.dll"))
+IFVILPROB=dll2.if_vil_prob
+IFVILPROB.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,ctypes.POINTER(ctypes.c_double)]
+IFVILPROB.restype=ctypes.c_double
+
 # angle measurement setup
 mouse_dll=ctypes.CDLL(path("resource/mouse.dll"))
 
@@ -151,8 +160,6 @@ RESET_TRACK.restype=None
 STOP_TRACK=mouse_dll.stop_tracking
 STOP_TRACK.argtypes=[]
 STOP_TRACK.restype=None
-
-# exec(open(path("resource/mouse_track.py")).read())
 
 # Info bar
 def set_infobar():
@@ -242,7 +249,7 @@ hotkeybar.add_cascade(label="Hotkeys",menu=hotkeylist)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.10.1 (2026.06.18.)")
+about.add_cascade(label="Version 2.10.2 (2026.06.21.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -985,7 +992,43 @@ def key_press11(event):
             
         labels[8][1].config(text="( {} , {} )".format(sign1,sign2),fg="#000000")
         labels[8][2].config(text="SH Dig",fg="#000000")
-        labels[8][3].config(text="")
+
+        in_grid=0
+
+        if len(pt)==0:
+            chunk_dist=int((cx**2+cz**2)**0.5)
+            if chunk_dist>999:
+                prob_dig=0
+            elif game_version.get()=="Pre 1.18.30":
+                if cx%27<=17 and cz%17<=17:
+                    prob_dig=vilprob16[chunk_dist]*18*18/0.267
+                    in_grid=1
+                else:
+                    prob_dig=0
+            else:
+                if cx%34<=27 and cz%34<=27:
+                    prob_dig=vilprob[chunk_dist]*28*28/0.267
+                    in_grid=1
+                else:
+                    prob_dig=0
+        else:
+            if game_version.get()=="Pre 1.18.30":
+                if cx%27<=17 and cz%17<=17:
+                    prob_dig=IFVILPROB(digx//16,digz//16,1,res,lencand,info)
+                    in_grid=1
+                else:
+                    prob_dig=0
+            else:
+                if cx%34<=27 and cz%34<=27:
+                    prob_dig=IFVILPROB(digx//16,digz//16,0,res,lencand,info)
+                    in_grid=1
+                else:
+                    prob_dig=0
+        col_code=[int(max_col[j]*(prob_dig)) for j in range(3)]
+        if in_grid:
+            labels[8][3].config(text=f'{prob_dig*100:.1f}'+"%",fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]))
+        else:
+            labels[8][3].config(text='')
     clear_input_buffer()
 
 def key_press12(event):
@@ -1204,8 +1247,8 @@ def changehotkey():
     changehotkeylabel.place(x=100,y=40)
     changehotkeylabel.config(text="Key: "+curkey)
     changehotkeybut.place(x=190,y=22)
-    changehotkeyreset.place(x=290,y=22)
-    changehotkeyreturn.place(x=335,y=22)
+    changehotkeyreset.place(x=270,y=22)
+    changehotkeyreturn.place(x=330,y=22)
     win.bind("<Key>",hotkeylisten)
     curkey=""
     
@@ -1381,7 +1424,6 @@ def first_calibration():
         calibration_label3.config(text="Copy+Paste coord 2 and add data")
         pyperclip.copy("tp @s {} 200 {}".format(x1,z1))
 
-dll2=ctypes.CDLL(path("resource/update.dll"))
 ANGLEDIF=dll2.angle_dif_cal
 ANGLEDIF.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double]
 ANGLEDIF.restype=ctypes.c_double
@@ -1567,10 +1609,6 @@ for i in range(9):
     R=tk.Label(win,text="")
     R.place(x=360,y=102+20*i,anchor=tk.CENTER)
     labels[i].append(R)
-
-# output
-class Result(ctypes.Structure):
-    _fields_=[("prob",ctypes.c_double),("ratio",ctypes.c_double),("x",ctypes.c_int),("z",ctypes.c_int)]
 
 # C++ functions
 dll1=ctypes.CDLL(path("resource/prior.dll"))
