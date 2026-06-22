@@ -93,9 +93,14 @@ def disprob2(x):
     return(f'{a:.1f}'+"%")
 def rgb_to_hex(r, g, b):
   return '#{:02X}{:02X}{:02X}'.format(r, g, b)
+
+user32=ctypes.windll.user32
 def clear_input_buffer():
-    while msvcrt.kbhit():
-        msvcrt.getch()
+    msg=ctypes.wintypes.MSG()
+    while user32.PeekMessageW(ctypes.byref(msg), 0, 0x0100, 0x0109, 0x0001):
+        pass
+    while user32.PeekMessageW(ctypes.byref(msg), 0, 0x0200, 0x020E, 0x0001):
+        pass
 
 # Window
 win=tk.Tk()
@@ -165,8 +170,10 @@ STOP_TRACK.restype=None
 def set_infobar():
     if calibrating==1:
         dis="Calibrating mouse tracking. Press F9, turn 90 degree and press F10"
+        fgcol="#0000FF"
     elif calibrating==2:
         dis="Calibrating mouse tracking (F9 pressed). Turn 90 degree and press F10"
+        fgcol="#0000FF"
     else:
         dis="Align: "+str(cur_error_angle.get())+" / "
         dis=dis+"PixPer: "+str(cur_pixel_perfect.get())+" / "
@@ -174,7 +181,8 @@ def set_infobar():
         dis=dis+k+" / "
         dis=dis+game_version.get()+" / "
         dis=dis+"~"+str(cur_within.get())
-    option_info.config(text=dis)
+        fgcol="#888888"
+    option_info.config(text=dis,fg=fgcol)
 option_info=tk.Label(win,text="Align: 0.3 / PixPer: 0.1 / Copy+Paste / 1.18.30+ / ~4000",font=ft_small,fg="#888888")
 option_info.place(x=0,y=278)
 
@@ -249,7 +257,7 @@ hotkeybar.add_cascade(label="Hotkeys",menu=hotkeylist)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.10.2 (2026.06.21.)")
+about.add_cascade(label="Version 2.10.3 (2026.06.22.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -576,6 +584,8 @@ def set_c1():
             if coords.valid:
                 x1=coords.x+0.5
                 z1=coords.z+0.5
+            else:
+                x1,z1=0,0
         elif cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Copy+Paste":
             inp=pyperclip.paste()
             inp=inp.split(" ")
@@ -584,8 +594,10 @@ def set_c1():
             if cur_input_mode.get()=="Corner+Facing" or cur_cinp.get()=="Copy+Paste (Corner)":
                 if round(x1%1,1) not in [0.3,0.7] or round(z1%1,1) not in [0.3,0.7]:
                     x1,z1=0,0
+        set_infobar()
     except:
-        x2,z2=0,0
+        x1,z1=0,0
+        option_info.config(text="Coordinate has not been copied",fg="#AA0000")
     if cur_cinp.get()!="Manual Input":
         c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
 
@@ -598,13 +610,17 @@ def set_c2():
             if coords.valid:
                 x2=coords.x+0.5
                 z2=coords.z+0.5
+            else:
+                x1,z1=0,0
         elif cur_cinp.get()=="Copy+Paste (Corner)" or cur_cinp.get()=="Copy+Paste":
             inp=pyperclip.paste()
             inp=inp.split(" ")
             x2=float(inp[0])
             z2=float(inp[2])
+        set_infobar()
     except:
         x2,z2=0,0
+        option_info.config(text="Coordinate has not been copied",fg="#AA0000")
     if cur_cinp.get()!="Manual Input":
         c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
 
@@ -667,7 +683,12 @@ def add_point():
                 add_prob(0,True)
             else:
                 add_prob(0,False)
+            set_infobar()
             display()
+        elif not valid:
+            option_info.config(text="Fractional part of Coord 1 should be 0.3 or 0.7 in Copy+Paste(Corner) mode",fg="#AA0000")
+        else:
+            option_info.config(text="Invalid coordinate input",fg="#AA0000")
     elif cur_input_mode.get()=="Corner+Facing":
         mod1=round(x1%1,2)
         mod2=round(z1%1,2)
@@ -737,6 +758,11 @@ def add_point():
                 else:
                     add_prob(0,False)
                 display()
+                set_infobar()
+            else:
+                option_info.config(text="Invalid pixel input",fg="#AA0000")
+        else:
+            option_info.config(text="Invalid coordinate or facing direction",fg="#AA0000")
     elif cur_input_mode.get()=="Pixel Perfect":
         valid=True
         if cur_cinp.get()=="Copy+Paste (Corner)":
@@ -786,8 +812,14 @@ def add_point():
             else:
                 add_prob(0,False)
             display()
+            set_infobar()
+        elif not valid:
+            option_info.config(text="Fractional part of Coord 1 should be 0.3 or 0.7 in Copy+Paste(Corner) mode",fg="#AA0000")
+        else:
+            option_info.config(text="Invalid coordinate input",fg="#AA0000")
     else:
         valid=True
+        valid_measurement=True
         if cur_cinp.get()=="Copy+Paste (Corner)":
             mod1=round(x1%1,2)
             mod2=round(z1%1,2)
@@ -798,10 +830,10 @@ def add_point():
         try:
             sum_abs+1
             if sum_abs==0:
-                valid=False
+                valid_measurement=False
         except:
-            valid=False
-        if valid and sum_abs>0:
+            valid_measurement=False
+        if valid and valid_measurement and sum_abs>0:
             pt.insert(0,[x1,z1,track_move,default[10],default[11],sum_abs])
             print(["mouse track",track_move,sum_abs])
             pt_mode.insert(0,cur_input_mode.get())
@@ -826,6 +858,11 @@ def add_point():
             else:
                 add_prob(0,False)
             display()
+            set_infobar()
+        elif not valid:
+            option_info.config(text="Fractional part of Coord 1 should be 0.3 or 0.7 in Copy+Paste(Corner) mode",fg="#AA0000")
+        else:
+            option_info.config(text="Invalid angle measurement",fg="#A0000")
 
 def del_point():
     global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual, lencand
@@ -1263,11 +1300,24 @@ def hotkeylisten(event):
         if valid:
             curkey=valid_key[valid_code.index(event.keycode)]
             changehotkeylabel.config(text="Key: "+curkey)
+            set_infobar()
+        else:
+            option_info.config(text="Invalid key. Try other keys.",fg="#AA0000")
+    else:
+        option_info.config(text="Invalid key. Try other keys.",fg="#AA0000")
 
 def hotkeychange():
     print("CHANGE")
     global curkey
-    if curkey=="" or changehotkeylist.get()=="Hotkey action":
+    if curkey=="":
+        option_info.config(text="No key was input",fg="#AA0000")
+        return()
+    if  changehotkeylist.get()=="Hotkey action":
+        option_info.config(text="Choose which hotkey action to change",fg="#AA0000")
+        return()
+    if changehotkeymod.get()=="Shift" and valid_mod[valid_key.index(curkey)]==0:
+        option_info.config(text="Invalid key. Try other keys. Hotkey didn't changed.",fg="#AA0000")
+        curkey=""
         return()
     keyind=hotkey_desc.index(changehotkeylist.get())
     if changehotkeymod.get()=="Shift":
@@ -1284,6 +1334,9 @@ def hotkeychange():
         changehotkeymod.set("Modifier")
         curkey=""
         changehotkeylabel.config(text="Key: "+curkey)
+        set_infobar()
+    else:
+        option_info.config(text="Duplicate hotkey. Hotkey didn't changed.",fg="#AA0000")
 
 def hotkeyreset():
     global cur_hotkey
@@ -1376,8 +1429,6 @@ def calibtrate_align_error():
 
     for i in range(len(hotkey_desc)):
         bindglobal[i].stop()
-    bindglobal[1].start()
-    bindglobal[2].start()
 
     for i in range(9):
         for j in range(4):
@@ -1424,6 +1475,12 @@ def first_calibration():
         calibration_label3.config(text="Copy+Paste coord 2 and add data")
         pyperclip.copy("tp @s {} 200 {}".format(x1,z1))
 
+        bindglobal[1].start()
+        bindglobal[2].start()
+        set_infobar()
+    else:
+        option_info.config(text="Invalid stronghold coordinate",fg="#AA0000")
+
 ANGLEDIF=dll2.angle_dif_cal
 ANGLEDIF.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double]
 ANGLEDIF.restype=ctypes.c_double
@@ -1454,6 +1511,9 @@ def add_align_calibration():
         c1_dis.config(text="Coord 1: ("+f'{x1:.2f}'+","+f'{z1:.2f}'+")")
         c2_dis.config(text="Coord 2: ("+f'{x2:.2f}'+","+f'{z2:.2f}'+")")
         pyperclip.copy("tp @s {} 200 {}".format(x1,z1))
+        set_infobar()
+    else:
+        option_info.config(text="Coord 1 and Coord 2 should be different",fg="#AA0000")
 
 def set_cal_c2():
     print("CALIBRATION COORD2")
@@ -1487,7 +1547,10 @@ def returncalc2():
         std_error=max(0,total_error-mean_error_precision**2)**0.5*12*16
         acc_list_dif=[(acc_list[i]-std_error)**2 for i in range(len(acc_list))]
         cur_error_angle.set(acc_list[acc_list_dif.index(min(acc_list_dif))])
-    
+
+    bindglobal[1].stop()
+    bindglobal[2].stop()
+        
     applyhotkey()
     set_mode()
     display()
