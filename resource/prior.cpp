@@ -19,6 +19,7 @@ int calculate_prior(int x1, int z1, int str_within, int prev_layout, int simul, 
 
     for(int i=(cur_x-str_within) ; i<(cur_x+str_within) ; i++){
         int mi1=((i%200)+200)%200;
+        int mi2_pprev=((i%40)+40)%40;
         int mi2_prev=((i%27)+27)%27;
         int mi2_new=((i%34)+34)%34;
         for(int j=(cur_z-str_within) ; j<(cur_z+str_within) ; j++){
@@ -26,7 +27,14 @@ int calculate_prior(int x1, int z1, int str_within, int prev_layout, int simul, 
             double cur_prob_sca=0;
             int mj1=((j%200)+200)%200;
             if(mi1>=50 && mi1<=150 && mj1>=50 && mj1<=150){cur_prob_sca=0.0000245074;}
-            if(prev_layout){
+            if(prev_layout==2){
+                int mj2=((j%40)+40)%40;
+                if(mi2_pprev<=28 && mj2<=28){
+                    int cur_dist=round(sqrt(i*i+j*j));
+                    if(cur_dist<nvilprob){cur_prob_vil=vilprob[cur_dist];}
+                }
+            }
+            else if(prev_layout==1){
                 int mj2=((j%27)+27)%27;
                 if(mi2_prev<=17 && mj2<=17){
                     int cur_dist=round(sqrt(i*i+j*j));

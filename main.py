@@ -17,15 +17,19 @@ def path(relative_path):
 # Import data
 data=list(csv.reader(open(path("resource/pdf.csv"))))
 pdf=[float(data[i][0]) for i in range(len(data))]
-data=list(csv.reader(open(path("resource/vilprob16.csv"))))
-vilprob16=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
 data=list(csv.reader(open(path("resource/vilprob.csv"))))
 vilprob=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
+data=list(csv.reader(open(path("resource/vilprob16.csv"))))
+vilprob16=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
+data=list(csv.reader(open(path("resource/vilprob11.csv"))))
+vilprob11=[float(data[i][0]) for i in range(len(data))]+[0]*(1000-len(data))
 
 data=list(csv.reader(open(path("resource/distprob.csv"))))
 distprob=[float(data[i][0]) for i in range(len(data))]
 data=list(csv.reader(open(path("resource/distprob16.csv"))))
 distprob16=[float(data[i][0]) for i in range(len(data))]
+data=list(csv.reader(open(path("resource/distprob11.csv"))))
+distprob11=[float(data[i][0]) for i in range(len(data))]
 
 # Import setting
 # 0 align, 1 pixel, 2 pixper, 3 mode, 4 coordinate, 5 str within, 6 mean, 7 version, 8 prior, 9 search rad
@@ -53,6 +57,8 @@ for i in range(len(default_hotkey)):
 # version parity
 if default[14]=="Copy+Paste":
     default[14]="Copy coordinate UI"
+if default[7]=="Pre 1.18.30":
+    default[7]="1.11+"
 
 # Load preset
 if len(setting_data)<2:
@@ -257,7 +263,7 @@ hotkeybar.add_cascade(label="Hotkeys",menu=hotkeylist)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.10.3 (2026.06.22.)")
+about.add_cascade(label="Version 2.11.0 (2026.06.25.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -539,7 +545,9 @@ gameversionmenu=tk.Menu(settingbar,tearoff=False)
 settingbar.add_cascade(label="Minecraft version",menu=gameversionmenu)
 gameversionmenu.add_radiobutton(label="1.21.100+",value="1.21.100+",variable=game_version,command=set_version)
 gameversionmenu.add_radiobutton(label="1.18.30+",value="1.18.30+",variable=game_version,command=set_version)
-gameversionmenu.add_radiobutton(label="Pre 1.18.30",value="Pre 1.18.30",variable=game_version,command=set_version)
+gameversionmenu.add_radiobutton(label="1.11+",value="1.11+",variable=game_version,command=set_version)
+gameversionmenu.add_radiobutton(label="1.4+",value="1.4+",variable=game_version,command=set_version)
+gameversionmenu.add_radiobutton(label="Pre 1.4",value="Pre 1.4",variable=game_version,command=set_version)
 
 cur_prior=tk.StringVar()
 cur_prior.set(default[8])
@@ -1036,7 +1044,13 @@ def key_press11(event):
             chunk_dist=int((cx**2+cz**2)**0.5)
             if chunk_dist>999:
                 prob_dig=0
-            elif game_version.get()=="Pre 1.18.30":
+            elif game_version.get()=="1.4+" or game_version.get()=="Pre 1.4":
+                if cx%40<=28 and cz%40<=28:
+                    prob_dig=vilprob16[chunk_dist]*29*29/0.267
+                    in_grid=1
+                else:
+                    prob_dig=0
+            elif game_version.get()=="1.11+":
                 if cx%27<=17 and cz%17<=17:
                     prob_dig=vilprob16[chunk_dist]*18*18/0.267
                     in_grid=1
@@ -1049,7 +1063,13 @@ def key_press11(event):
                 else:
                     prob_dig=0
         else:
-            if game_version.get()=="Pre 1.18.30":
+            if game_version.get()=="1.4+" or game_version.get()=="Pre 1.4":
+                if cx%40<=28 and cz%40<=28:
+                    prob_dig=IFVILPROB(digx//16,digz//16,2,res,lencand,info)
+                    in_grid=1
+                else:
+                    prob_dig=0
+            elif game_version.get()=="1.11+":
                 if cx%27<=17 and cz%17<=17:
                     prob_dig=IFVILPROB(digx//16,digz//16,1,res,lencand,info)
                     in_grid=1
@@ -1605,7 +1625,7 @@ helpeye=tk.Menu(calibrationhelp,tearoff=False)
 calibrationhelp.add_cascade(label="Eye allign error",menu=helpeye)
 helpeye.add_cascade(label="(Affects all mode)")
 helpeye.add_cascade(label="(How accurate you can allign cursor to the eye)")
-helpeye.add_cascade(label="(Pre-1.21.100)")
+helpeye.add_cascade(label="(Pre 1.21.100)")
 helpeye.add_cascade(label="0.03: Monitor pixel perfect")
 helpeye.add_cascade(label="0.3: Minecraft pixel perfect")
 helpeye.add_cascade(label="1: Within center third of the eye")
@@ -1628,7 +1648,7 @@ helppf=tk.Menu(calibrationhelp,tearoff=False)
 calibrationhelp.add_cascade(label="Pixel perfect error",menu=helppf)
 helppf.add_cascade(label="(Affects pixel perfect mode)")
 helppf.add_cascade(label="(How accurate you can measure pixel shift)")
-helppf.add_cascade(label="(Pre-1.21.100)")
+helppf.add_cascade(label="(Pre 1.21.100)")
 helppf.add_cascade(label="0.03: Count pixel shift to one decimal place")
 helppf.add_cascade(label="0.075: Count pixel shift to nearest quarter")
 helppf.add_cascade(label="0.3: Count pixel shift to nearest integer")
@@ -1684,7 +1704,7 @@ PRIOR.restype=ctypes.c_int
 UPDATE=dll2.update_prob
 UPDATE.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,
                  ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,
-                 ctypes.POINTER(ctypes.c_double)]
+                 ctypes.POINTER(ctypes.c_double),ctypes.c_int]
 UPDATE.restype=ctypes.c_int
 
 OutputArrayType=ctypes.c_double*100
@@ -1694,7 +1714,7 @@ UPDATEPF=dll2.update_prob_pf
 UPDATEPF.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,
                  ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int,
                  ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,
-                   ctypes.POINTER(ctypes.c_double)]
+                   ctypes.POINTER(ctypes.c_double),ctypes.c_int]
 UPDATEPF.restype=ctypes.c_int
 
 PROBWITHIN=dll2.prob_within
@@ -1715,10 +1735,13 @@ VILLAGEGRID.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes
 VILLAGEGRID.restype=ctypes.c_int
 
 # precalculated lists
-DoubleArrayType=ctypes.c_double*len(vilprob16)
-a_vilprob16=DoubleArrayType(*vilprob16)
 DoubleArrayType=ctypes.c_double*len(vilprob)
 a_vilprob=DoubleArrayType(*vilprob)
+DoubleArrayType=ctypes.c_double*len(vilprob16)
+a_vilprob16=DoubleArrayType(*vilprob16)
+DoubleArrayType=ctypes.c_double*len(vilprob11)
+a_vilprob11=DoubleArrayType(*vilprob11)
+
 DoubleArrayType=ctypes.c_double*len(pdf)
 a_pdf=DoubleArrayType(*pdf)
 
@@ -1726,20 +1749,29 @@ DoubleArrayType=ctypes.c_double*len(distprob)
 a_distprob=DoubleArrayType(*distprob)
 DoubleArrayType=ctypes.c_double*len(distprob16)
 a_distprob16=DoubleArrayType(*distprob16)
+DoubleArrayType=ctypes.c_double*len(distprob11)
+a_distprob11=DoubleArrayType(*distprob11)
 
 # Calculate
 def calculate_prior(x1,z1):
     global res, lencand
-    
-    prev_layout=(game_version.get()=="Pre 1.18.30")
+
+    if game_version.get()=="1.4+" or game_version.get()=="Pre 1.4":
+        prev_layout=2
+    elif game_version.get()=="1.11+":
+        prev_layout=1
+    else:
+        prev_layout=0
     limit=int(cur_within.get()/16)
     maxchunk=(limit*2)**2
     OutputArrayType=Result*maxchunk
     res=OutputArrayType()
 
     based_on_simul=int(cur_prior.get()=="Simulation")
-    
-    if prev_layout:
+
+    if prev_layout==2:
+        lencand=PRIOR(int(x1),int(z1),limit,2,based_on_simul,a_vilprob11,len(vilprob11),res,info,a_distprob11,len(distprob11))
+    elif prev_layout==1:
         lencand=PRIOR(int(x1),int(z1),limit,1,based_on_simul,a_vilprob16,len(vilprob16),res,info,a_distprob16,len(distprob16))
     else:
         lencand=PRIOR(int(x1),int(z1),limit,0,based_on_simul,a_vilprob,len(vilprob),res,info,a_distprob,len(distprob))
@@ -1803,19 +1835,23 @@ def add_prob(n,prior):
     print(["error",error_angle,error_precision,error_combine])
 
     # update
+    if game_version.get()=="Pre 1.4":
+        eye_point=0
+    else:
+        eye_point=2
     if pt_mode[n]=="Coord+Coord" or pt_mode[n]=="Corner+Facing":
-        lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
+        lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info,eye_point)
     elif pt_mode[n]=="Pixel Perfect":
         newver=int(game_version.get()=="1.21.100+")
         if newver:
-            lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n],error_dist,1,a_pdf,len(pdf),res,lencand,info)
+            lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n],error_dist,1,a_pdf,len(pdf),res,lencand,info,eye_point)
         else:
-            lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n]*2,error_dist,0,a_pdf,len(pdf),res,lencand,info)
+            lencand=UPDATEPF(x1,z1,x2,z2,pt_pixel[n],error_combine,pt_pixel_err[n]*2,error_dist,0,a_pdf,len(pdf),res,lencand,info,eye_point)
         print(["PF ERROR",info[19],info[20],info[21],info[22]])
     elif pt_mode[n]=="Mouse Tracking":
         x2=x1+math.cos(pt[n][2]/pt[n][3]*math.pi/2)*10
         z2=z1+math.sin(pt[n][2]/pt[n][3]*math.pi/2)*10
-        lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info)
+        lencand=UPDATE(x1,z1,x2,z2,error_combine,a_pdf,len(pdf),res,lencand,info,eye_point)
 
     end_time=time.time()
     print(["CALCULATION TIME",end_time-start_time])
@@ -1843,11 +1879,15 @@ def display():
 
     # Village grid
     if cur_pc_value==-1:
-        prev_layout=(game_version.get()=="Pre 1.18.30")
         limit=int(cur_within.get()/16)
-        if prev_layout:
+        if game_version.get()=="Pre 1.4" or game_version.get()=="1.4+":
+            prev_layout=2
+            gridlimit=math.ceil(limit/40)+3
+        elif game_version.get()=="1.11+":
+            prev_layout=1
             gridlimit=math.ceil(limit/27)+3
         else:
+            prev_layout=0
             gridlimit=math.ceil(limit/34)+3
         maxchunk=(gridlimit*2+1)**2
         OutputArrayType=Result*maxchunk

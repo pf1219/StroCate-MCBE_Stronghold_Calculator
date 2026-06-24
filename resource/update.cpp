@@ -13,7 +13,7 @@ struct Result{
 };
 
 extern "C" __declspec(dllexport)
-int update_prob(double x1, double z1, double x2, double z2, double error, double* PDF, int npdf, Result* res, int lencand, double* info){
+int update_prob(double x1, double z1, double x2, double z2, double error, double* PDF, int npdf, Result* res, int lencand, double* info, int eye_point){
     double a=x1+0.5;
     double b=z1+0.5;
     double xeye1,xeye2,zeye1,zeye2,xeye,zeye;
@@ -57,8 +57,8 @@ int update_prob(double x1, double z1, double x2, double z2, double error, double
     int ncand=0;
 
     for(int i=0 ; i<lencand ; i++){
-        int posx=res[i].x*16+2;
-        int posz=res[i].z*16+2;
+        int posx=res[i].x*16+eye_point;
+        int posz=res[i].z*16+eye_point;
         double xvec2=posx-a;
         double zvec2=posz-b;
         double vecdist2=sqrt(xvec2*xvec2+zvec2*zvec2);
@@ -120,7 +120,7 @@ int update_prob(double x1, double z1, double x2, double z2, double error, double
 }
 
 extern "C" __declspec(dllexport)
-int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, double error, double error_pfmeasure, double error_dist, int newver, double* PDF, int npdf, Result* res, int lencand, double* info){
+int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, double error, double error_pfmeasure, double error_dist, int newver, double* PDF, int npdf, Result* res, int lencand, double* info, int eye_point){
     double dist=sqrt((x2-x1)*(x2-x1)+(z2-z1)*(z2-z1));
     double shift, error_coef, kdist, dist_coef;
     if(newver){
@@ -195,8 +195,8 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
 
     for(int i=0 ; i<lencand ; i++){
         /* angle */
-        int posx=res[i].x*16+2;
-        int posz=res[i].z*16+2;
+        int posx=res[i].x*16+eye_point;
+        int posz=res[i].z*16+eye_point;
         double xvec2=posx-a;
         double zvec2=posz-b;
         double vecdist2=sqrt(xvec2*xvec2+zvec2*zvec2);
@@ -290,7 +290,11 @@ int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, in
     int grid_z;
     int chunk_x=(x<0) ? (x-15)/16 : x/16;
     int chunk_z=(z<0) ? (z-15)/16 : z/16;
-    if(prev_layout){
+    if(prev_layout==2){
+        grid_x=(chunk_x<0) ? (chunk_x-39)/40 : chunk_x/40;
+        grid_z=(chunk_z<0) ? (chunk_z-39)/40 : chunk_z/40;
+    }
+    else if(prev_layout==1){
         grid_x=(chunk_x<0) ? (chunk_x-26)/27 : chunk_x/27;
         grid_z=(chunk_z<0) ? (chunk_z-26)/27 : chunk_z/27;
     }
@@ -310,7 +314,19 @@ int village_grid(int x, int z, int grid_within, int prev_layout, Result* res, in
     for(int i=0 ; i<ncand ; i++){
         int curx=res[i].x;
         int curz=res[i].z;
-        if(prev_layout){
+        if(prev_layout==2){
+            if(((curx%40)+40)%40<=28 && ((curz%40)+40)%40<=28){
+                int curgridx=(curx<0) ? (curx-39)/40 : curx/40;
+                curgridx -= minx;
+                int curgridz=(curz<0) ? (curz-39)/40 : curz/40;
+                curgridz -= minz;
+                int ind=curgridx*size+curgridz;
+                prob[ind] += res[i].prob;
+                xmean[ind] += res[i].prob*(curx*16+4);
+                zmean[ind] += res[i].prob*(curz*16+4);
+            }
+        }
+        else if(prev_layout==1){
             if(((curx%27)+27)%27<=17 && ((curz%27)+27)%27<=17){
                 int curgridx=(curx<0) ? (curx-26)/27 : curx/27;
                 curgridx -= minx;
@@ -490,7 +506,12 @@ double if_vil_prob(int x, int z, int prev_layout, Result* res, int lencand, doub
     int gridx, gridz, cur_gridx, cur_gridz, curx, curz;
     int found=0;
 
-    if(prev_layout){
+    if(prev_layout==2){
+        base_prob=1.0/29.0/29.0*0.267;
+        gridx=(x<0) ? (x-39)/40 : x/40;
+        gridz=(z<0) ? (z-39)/40 : z/40;
+    }
+    else if(prev_layout==1){
         base_prob=1.0/18.0/18.0*0.267;
         gridx=(x<0) ? (x-26)/27 : x/27;
         gridz=(z<0) ? (z-26)/27 : z/27;
@@ -511,7 +532,11 @@ double if_vil_prob(int x, int z, int prev_layout, Result* res, int lencand, doub
             prob_in += res[i].prob*likelihood;
         }
         else if(res[i].ratio>0){
-            if(prev_layout){
+            if(prev_layout==2){
+                cur_gridx=(curx<0) ? (curx-39)/40 : curx/40;
+                cur_gridz=(curz<0) ? (curz-39)/40 : curz/40;
+            }
+            else if(prev_layout==1){
                 cur_gridx=(curx<0) ? (curx-26)/27 : curx/27;
                 cur_gridz=(curz<0) ? (curz-26)/27 : curz/27;
             }
