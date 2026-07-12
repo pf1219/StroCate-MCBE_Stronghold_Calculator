@@ -2,6 +2,8 @@
 #include <vector>
 #include <algorithm>
 #include <cstdio>
+#include <random>
+#include <omp.h>
 
 using namespace std;
 
@@ -51,6 +53,8 @@ int update_prob(double x1, double z1, double x2, double z2, double error, double
 
     double xvec=xeye-a;
     double zvec=zeye-b;
+    info[11]=xvec;
+    info[12]=zvec;
     double vecdist=sqrt(xvec*xvec+zvec*zvec);
 
     vector<Result> new_res;
@@ -188,6 +192,8 @@ int update_prob_pf(double x1, double z1, double x2, double z2, double pixel, dou
 
     double xvec=xeye-a;
     double zvec=zeye-b;
+    info[11]=xvec;
+    info[12]=zvec;
     double vecdist=sqrt(xvec*xvec+zvec*zvec);
 
     vector<Result> new_res;
@@ -564,4 +570,87 @@ double if_vil_prob(int x, int z, int prev_layout, Result* res, int lencand, doub
     else{res_prob=prob_in/(prob_in+prob_not);}
 
     return(res_prob);
+}
+
+extern "C" __declspec(dllexport)
+double simul_throw(double x, double z, double vecx, double vecz, Result* res, int lencand, double move_dist, double error, double* info, int eye_point, double* PDF, int npdf, int range){
+    double sum_prob_hit=0.0;
+
+    /* new position */
+    double pervecx=vecz;
+    double pervecz=-1*vecx;
+    double pervecsize=sqrt(pervecx*pervecx+pervecz*pervecz);
+    double newx=x+pervecx*move_dist/pervecsize;
+    double newz=z+pervecz*move_dist/pervecsize;
+
+    info[13]=newx;
+    info[14]=newz;
+
+    /* precalculated */
+    vector<double> weights(lencand);
+    vector<double> precalc_xvec2(lencand);
+    vector<double> precalc_zvec2(lencand);
+    vector<double> precalc_vecdist2(lencand);
+
+    for(int i=0 ; i<lencand ; i++){
+        weights[i]=res[i].prob;
+        int posx = res[i].x * 16 + eye_point;
+        int posz = res[i].z * 16 + eye_point;
+        precalc_xvec2[i] = posx - newx;
+        precalc_zvec2[i] = posz - newz;
+        precalc_vecdist2[i] = sqrt(precalc_xvec2[i]*precalc_xvec2[i] + precalc_zvec2[i]*precalc_zvec2[i]);
+    }
+
+    #pragma omp parallel reduction(+:sum_prob_hit)
+    {
+        thread_local mt19937 gen(random_device{}());
+        discrete_distribution<int> weighted_choice(weights.begin(),weights.end());
+        normal_distribution<double> gaussian(0,error);
+
+        #pragma omp for
+        for(int iteration=0 ; iteration<400 ; iteration++){
+            double sum_prob=0;
+            double prob_hit=0;
+            int chosen=weighted_choice(gen);
+
+            double newvecx=res[chosen].x*16+eye_point-newx;
+            double newvecz=res[chosen].z*16+eye_point-newz;
+            double theta=gaussian(gen);
+            double xvec=newvecx*cos(theta)-newvecz*sin(theta);
+            double zvec=newvecx*sin(theta)+newvecz*cos(theta);
+            double vecdist=sqrt(xvec*xvec+zvec*zvec);
+
+            for(int i=0 ; i<lencand ; i++){
+                double dot_prod = xvec * precalc_xvec2[i] + zvec * precalc_zvec2[i];
+                double magnitude = vecdist * precalc_vecdist2[i];
+
+                double angledif=1000;
+                double likelihood=0;
+                if(magnitude>0){
+                    double val=dot_prod/magnitude;
+                    if(val>1.0){val=1.0;}
+                    if(val<-1.0){val=-1.0;}
+                    angledif=acos(val);
+                }
+
+                int Z=round(1000*angledif/error);
+                if(Z<npdf){likelihood=PDF[Z];}
+                double new_prob=res[i].prob*likelihood;
+
+                sum_prob += new_prob;
+                if(range==0){
+                    if(i==chosen){prob_hit=new_prob;}
+                }
+                else{
+                    int xdist=res[chosen].x-res[i].x;
+                    int zdist=res[chosen].z-res[i].z;
+                    int dist=xdist*xdist+zdist*zdist;
+                    if(dist <= range*range){prob_hit += new_prob;}
+                }
+            }
+
+            sum_prob_hit += prob_hit/sum_prob;
+        }
+    }
+    return(sum_prob_hit/400.0);
 }
