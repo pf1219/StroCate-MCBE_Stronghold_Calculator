@@ -31,9 +31,16 @@ distprob16=[float(data[i][0]) for i in range(len(data))]
 data=list(csv.reader(open(path("resource/distprob11.csv"))))
 distprob11=[float(data[i][0]) for i in range(len(data))]
 
+# info
+# 0 vilprob, 1 xmean, 2 zmean, 3 sumprob
+# 4~7 if vil prob, prob within stats
+# 11 xvec, 12 zvec, 13 next x, 14 next z
+# 19~22 pf error
+
 # Import setting
 # 0 align, 1 pixel, 2 pixper, 3 mode, 4 coordinate, 5 str within, 6 mean, 7 version, 8 prior, 9 search rad
 # 10~12 mouse track, 13 highlight color, 14 manual input
+# 15 next throw suggestion, 16 threshold, 17 within
 preset_name=[]
 preset_default=[]
 if "StroCate_setting.csv" in os.listdir():
@@ -41,24 +48,32 @@ if "StroCate_setting.csv" in os.listdir():
     default=setting_data[0]
 else:
     setting_data=[]
-    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Show","1.18.30+","Simulation","10000",0,0,0,0,"Show coordinate"]
+    default=["0.3","0.1","0.1","Coord+Coord","Copy+Paste","12","Show","1.18.30~1.21.90","Simulation","6000",0,0,0,0,"Show coordinate"]
 while len(default)<14:
     default.append(0)
 for i in range(10,14):
     default[i]=float(default[i])
 if len(default)<15:
     default.append("Show coordinate")
+if len(default)<16 and False:
+    default.append("Around last throw")
+    default.append(75)
+    default.append(12)
     
 default_hotkey=["[","]","=","F9","F10","F4","s p","s m","p","m","d c","d v","d x","d n","d m","s i"]
 for i in range(len(default_hotkey)):
     if len(default)<(16+i):
         default.append(default_hotkey[i])
 
-# version parity
+# version name parity
 if default[14]=="Copy+Paste":
     default[14]="Copy coordinate UI"
-if default[7]=="Pre 1.18.30":
-    default[7]="1.11+"
+if default[7]=="1.18.30+":
+    default[7]="1.18.30~1.21.90"
+elif default[7]=="Pre 1.18.30" or default[7]=="1.11+":
+    default[7]="1.11~1.18.20"
+elif default[7]=="1.4+":
+    default[7]="1.4~1.10"
 
 # Load preset
 if len(setting_data)<2:
@@ -153,6 +168,12 @@ IFVILPROB=dll2.if_vil_prob
 IFVILPROB.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.POINTER(Result),ctypes.c_int,ctypes.POINTER(ctypes.c_double)]
 IFVILPROB.restype=ctypes.c_double
 
+SIMULTHROW=dll2.simul_throw
+SIMULTHROW.argtypes=[ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.POINTER(Result),
+                     ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.POINTER(ctypes.c_double),ctypes.c_int,
+                     ctypes.POINTER(ctypes.c_double),ctypes.c_int,ctypes.c_int]
+SIMULTHROW.restype=ctypes.c_double
+
 # angle measurement setup
 mouse_dll=ctypes.CDLL(path("resource/mouse.dll"))
 
@@ -189,7 +210,7 @@ def set_infobar():
         dis=dis+"~"+str(cur_within.get())
         fgcol="#888888"
     option_info.config(text=dis,fg=fgcol)
-option_info=tk.Label(win,text="Align: 0.3 / PixPer: 0.1 / Copy+Paste / 1.18.30+ / ~4000",font=ft_small,fg="#888888")
+option_info=tk.Label(win,text="Align: 0.3 / PixPer: 0.1 / Copy+Paste / 1.18.30~1.21.90 / ~6000",font=ft_small,fg="#888888")
 option_info.place(x=0,y=278)
 
 # Menu bar
@@ -263,7 +284,7 @@ hotkeybar.add_cascade(label="Hotkeys",menu=hotkeylist)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.11.0 (2026.06.25.)")
+about.add_cascade(label="Version 2.11.1 (2026.07.12.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -544,9 +565,9 @@ game_version.set(default[7])
 gameversionmenu=tk.Menu(settingbar,tearoff=False)
 settingbar.add_cascade(label="Minecraft version",menu=gameversionmenu)
 gameversionmenu.add_radiobutton(label="1.21.100+",value="1.21.100+",variable=game_version,command=set_version)
-gameversionmenu.add_radiobutton(label="1.18.30+",value="1.18.30+",variable=game_version,command=set_version)
-gameversionmenu.add_radiobutton(label="1.11+",value="1.11+",variable=game_version,command=set_version)
-gameversionmenu.add_radiobutton(label="1.4+",value="1.4+",variable=game_version,command=set_version)
+gameversionmenu.add_radiobutton(label="1.18.30~1.21.90",value="1.18.30~1.21.90",variable=game_version,command=set_version)
+gameversionmenu.add_radiobutton(label="1.11~1.18.20",value="1.11~1.18.20",variable=game_version,command=set_version)
+gameversionmenu.add_radiobutton(label="1.4~1.10",value="1.4~1.10",variable=game_version,command=set_version)
 gameversionmenu.add_radiobutton(label="Pre 1.4",value="Pre 1.4",variable=game_version,command=set_version)
 
 cur_prior=tk.StringVar()
@@ -575,6 +596,38 @@ withinmenu.add_radiobutton(label="4000",value=4000,variable=cur_within,command=s
 withinmenu.add_radiobutton(label="6000",value=6000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="10000",value=10000,variable=cur_within,command=set_version)
 
+# Next throw suggestion
+if False:
+    tsmenu=tk.Menu(displaybar,tearoff=False)
+    displaybar.add_cascade(label="Next throw suggestion",menu=tsmenu)
+
+    cur_tsmethod=tk.StringVar()
+    cur_tsmethod.set(default[15])
+    tsmethodmenu=tk.Menu(tsmenu,tearoff=False)
+    tsmenu.add_cascade(label="Method",menu=tsmethodmenu)
+    tsmethodmenu.add_radiobutton(label="Hide",value="Hide",variable=cur_tsmethod)
+    tsmethodmenu.add_radiobutton(label="Around last throw",value="Around last throw",variable=cur_tsmethod)
+    tsmethodmenu.add_radiobutton(label="Around stronghold",value="Around stronghold",variable=cur_tsmethod)
+
+    cur_tsthr=tk.IntVar()
+    cur_tsthr.set(int(default[16]))
+    tsthrmenu=tk.Menu(tsmenu,tearoff=False)
+    tsmenu.add_cascade(label="Target probability",menu=tsthrmenu)
+    tsthrmenu.add_radiobutton(label="33%",value=33,variable=cur_tsthr)
+    tsthrmenu.add_radiobutton(label="50%",value=50,variable=cur_tsthr)
+    tsthrmenu.add_radiobutton(label="75%",value=75,variable=cur_tsthr)
+    tsthrmenu.add_radiobutton(label="90%",value=90,variable=cur_tsthr)
+
+    cur_tswithin=tk.IntVar()
+    cur_tswithin.set(int(default[17]))
+    tswithinmenu=tk.Menu(tsmenu,tearoff=False)
+    tsmenu.add_cascade(label="Chunk within",menu=tswithinmenu)
+    tswithinmenu.add_radiobutton(label="Exact chunk",value=0,variable=cur_tswithin)
+    tswithinmenu.add_radiobutton(label="4",value=4,variable=cur_tswithin)
+    tswithinmenu.add_radiobutton(label="8",value=8,variable=cur_tswithin)
+    tswithinmenu.add_radiobutton(label="12",value=12,variable=cur_tswithin)
+    tswithinmenu.add_radiobutton(label="16",value=16,variable=cur_tswithin)
+    tswithinmenu.add_radiobutton(label="20",value=20,variable=cur_tswithin)
 
 # Initialize infobar
 calibrating=0
@@ -692,7 +745,7 @@ def add_point():
             else:
                 add_prob(0,False)
             set_infobar()
-            display()
+            display(error_combine)
         elif not valid:
             option_info.config(text="Fractional part of Coord 1 should be 0.3 or 0.7 in Copy+Paste(Corner) mode",fg="#AA0000")
         else:
@@ -765,8 +818,8 @@ def add_point():
                     add_prob(0,True)
                 else:
                     add_prob(0,False)
-                display()
                 set_infobar()
+                display(error_combine)
             else:
                 option_info.config(text="Invalid pixel input",fg="#AA0000")
         else:
@@ -819,8 +872,8 @@ def add_point():
                 add_prob(0,True)
             else:
                 add_prob(0,False)
-            display()
             set_infobar()
+            display(error_combine)
         elif not valid:
             option_info.config(text="Fractional part of Coord 1 should be 0.3 or 0.7 in Copy+Paste(Corner) mode",fg="#AA0000")
         else:
@@ -865,12 +918,12 @@ def add_point():
                 add_prob(0,True)
             else:
                 add_prob(0,False)
-            display()
             set_infobar()
+            display(error_combine)
         elif not valid:
             option_info.config(text="Fractional part of Coord 1 should be 0.3 or 0.7 in Copy+Paste(Corner) mode",fg="#AA0000")
         else:
-            option_info.config(text="Invalid angle measurement",fg="#A0000")
+            option_info.config(text="Invalid angle measurement",fg="#AA0000")
 
 def del_point():
     global pt, pt_mode, pt_prec, pt_err, pt_coord, pt_pixel, pt_pixel_err, pt_manual, lencand
@@ -891,6 +944,7 @@ def del_point():
                 add_prob(len(pt)-i-1,True)
             else:
                 add_prob(len(pt)-i-1,False)
+        set_infobar()
         display()
     except:
         pass
@@ -908,6 +962,7 @@ def clear():
     pt_manual=[]
     listdata.delete(0,tk.END)
     lencand=0
+    set_infobar()
     display()
 
 def clear_inp(event):
@@ -1044,13 +1099,13 @@ def key_press11(event):
             chunk_dist=int((cx**2+cz**2)**0.5)
             if chunk_dist>999:
                 prob_dig=0
-            elif game_version.get()=="1.4+" or game_version.get()=="Pre 1.4":
+            elif game_version.get()=="1.4~1.10" or game_version.get()=="Pre 1.4":
                 if cx%40<=28 and cz%40<=28:
                     prob_dig=vilprob16[chunk_dist]*29*29/0.267
                     in_grid=1
                 else:
                     prob_dig=0
-            elif game_version.get()=="1.11+":
+            elif game_version.get()=="1.11~1.18.20":
                 if cx%27<=17 and cz%17<=17:
                     prob_dig=vilprob16[chunk_dist]*18*18/0.267
                     in_grid=1
@@ -1063,13 +1118,13 @@ def key_press11(event):
                 else:
                     prob_dig=0
         else:
-            if game_version.get()=="1.4+" or game_version.get()=="Pre 1.4":
+            if game_version.get()=="1.4~1.10" or game_version.get()=="Pre 1.4":
                 if cx%40<=28 and cz%40<=28:
                     prob_dig=IFVILPROB(digx//16,digz//16,2,res,lencand,info)
                     in_grid=1
                 else:
                     prob_dig=0
-            elif game_version.get()=="1.11+":
+            elif game_version.get()=="1.11~1.18.20":
                 if cx%27<=17 and cz%17<=17:
                     prob_dig=IFVILPROB(digx//16,digz//16,1,res,lencand,info)
                     in_grid=1
@@ -1188,6 +1243,7 @@ def key_press6(event):
         win.state("normal")
     else:
         win.state("iconic")
+    set_infobar()
 
 # Keybind help
 hotkey_desc=["Paste coord 1","Paste coord 2","Add data","Start mouse tracking","End mouse tracking","Minimize window",
@@ -1756,9 +1812,9 @@ a_distprob11=DoubleArrayType(*distprob11)
 def calculate_prior(x1,z1):
     global res, lencand
 
-    if game_version.get()=="1.4+" or game_version.get()=="Pre 1.4":
+    if game_version.get()=="1.4~1.10" or game_version.get()=="Pre 1.4":
         prev_layout=2
-    elif game_version.get()=="1.11+":
+    elif game_version.get()=="1.11~1.18.20":
         prev_layout=1
     else:
         prev_layout=0
@@ -1778,7 +1834,7 @@ def calculate_prior(x1,z1):
     
 def add_prob(n,prior):
     start_time=time.time()
-    global res, lencand
+    global res, lencand, error_combine
     x1=pt[n][0]
     z1=pt[n][1]
     x2=pt[n][2]
@@ -1858,7 +1914,7 @@ def add_prob(n,prior):
     print(["info",lencand]+info[:4])
 
 # Display
-def display():
+def display(prob_added=0):
     global gridres, lengrid, prob2, withinres
     
     a=time.time()
@@ -1880,10 +1936,10 @@ def display():
     # Village grid
     if cur_pc_value==-1:
         limit=int(cur_within.get()/16)
-        if game_version.get()=="Pre 1.4" or game_version.get()=="1.4+":
+        if game_version.get()=="Pre 1.4" or game_version.get()=="1.4~1.10":
             prev_layout=2
             gridlimit=math.ceil(limit/40)+3
-        elif game_version.get()=="1.11+":
+        elif game_version.get()=="1.11~1.18.20":
             prev_layout=1
             gridlimit=math.ceil(limit/27)+3
         else:
@@ -1983,6 +2039,53 @@ def display():
         else:
             labels[i][3].config(text="")
 
+    # info
+    if prob_added>0 and lencand>0:
+        ## village stronghold
+        option_text="VilStr: {}%".format(round(info[0]*100))
+
+        vecx=info[11]
+        vecz=info[12]
+        if pt_mode[0] in ["Corner+Facing","Mouse Tracking"]:
+            sx=pt[0][0]
+            sz=pt[0][1]
+        else:
+            sx=pt[0][2]
+            sz=pt[0][3]
+        if game_version.get()=="Pre 1.4":
+            eye_point=0
+        else:
+            eye_point=2
+
+        ## distance
+        dist=((res[0].x*16+4-sx)**2+(res[0].z*16+4-sz)**2)**0.5
+        option_text=option_text+", Dist: {}(maxprob)".format(round(dist))
+        
+    ## next throw
+    if prob_added>0 and lencand>0 and cur_tsmethod.get()!="Hide" and False:
+        if cur_tsmethod.get()=="Around stronghold":
+            sx=round(info[1])
+            sz=round(info[2])
+        th1=cur_tsthr.get()
+        th2=th1/100
+        within=cur_tswithin.get()
+        
+        if len(pt)==1:
+            print("NEXT THROW")
+            for sug in [5,10,20,30,40,50,60,80,100,125,150,175,200,300,350,400,450,500]:
+                xprob=SIMULTHROW(sx,sz,vecx,vecz,res,lencand,sug,prob_added,info,eye_point,a_pdf,len(pdf),within)
+                print([sug,xprob])
+                if xprob>th2 or time.time()-a>0.1:
+                    break
+            if xprob>th2:
+                if cur_tsmethod.get()=="Around last throw":
+                    option_text=option_text+", Next: {}Rt({}C,≥{}%)".format(sug,within,th1)
+                else:
+                    option_text=option_text+", Next: ({},{})({}C,≥{}%)".format(round(info[13]),round(info[14]),within,th1)
+            else:
+                option_text=option_text+", Next: Target prob unreachable"
+            
+    option_info.config(text=option_text,fg="#888888")
     print(["DISPLAY TIME",time.time()-a])
         
 # Result
@@ -2009,6 +2112,7 @@ def close():
     new_default=new_default+[cur_input_mode.get(),cur_cinp.get(),str(cur_pc.get()),cur_dismean.get()]
     new_default=new_default+[game_version.get(),cur_prior.get(),str(cur_within.get())]
     new_default=new_default+[str(default[10]),str(default[11]),str(default[12]),str(default[13]),cur_manual_input.get()]
+    # new_default=new_default+[cur_tsmethod.get(),str(cur_tsthr.get()),str(cur_tswithin.get())]
     f=open("StroCate_setting.csv","w",newline="")
     a=csv.writer(f)
     a.writerow(new_default)
