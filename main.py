@@ -284,7 +284,7 @@ hotkeybar.add_cascade(label="Hotkeys",menu=hotkeylist)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.11.1 (2026.07.12.)")
+about.add_cascade(label="Version 2.11.2 (2026.07.24.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -989,199 +989,238 @@ bg=BG()
 bg.gbind("<KeyRelease>",clear_input_buffer())
 
 def key_press1(event):
-    set_c1()
-    clear_input_buffer()
+    try:
+        set_c1()
+        clear_input_buffer()
+    except:
+        option_info.config(text="Paste coord 1 error",fg="#AA0000")
 
 def key_press2(event):
-    if calibrating_align:
-        set_cal_c2()
-    elif cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
-        set_c2()
-    clear_input_buffer()
+    try:
+        if calibrating_align:
+            set_cal_c2()
+        elif cur_input_mode.get()=="Coord+Coord" or cur_input_mode.get()=="Pixel Perfect":
+            set_c2()
+        clear_input_buffer()
+    except:
+        option_info.config(text="Paste coord 2 error",fg="#AA0000")
 
 def key_press3(event):
-    if calibrating_align:
-        add_align_calibration()
-    else:
-        add_point()
-    clear_input_buffer()
+    try:
+        if calibrating_align:
+            add_align_calibration()
+        else:
+            add_point()
+        clear_input_buffer()
+    except:
+        option_info.config(text="Add data error",fg="#AA0000")
 
 def key_press7(event):
-    if cur_input_mode.get()=="Pixel Perfect":
-        try:
-            cur_pixel_inp=float(pixel_inp.get())
-            cur_pixel_inp=round(cur_pixel_inp+0.5,1)
-            pixel_inp.delete(0,tk.END)
-            pixel_inp.insert(0,cur_pixel_inp)
-        except:
-            pixel_inp.delete(0,tk.END)
-            pixel_inp.insert(0,"0.5")
-    clear_input_buffer()
+    try:
+        if cur_input_mode.get()=="Pixel Perfect":
+            try:
+                cur_pixel_inp=float(pixel_inp.get())
+                cur_pixel_inp=round(cur_pixel_inp+0.5,1)
+                pixel_inp.delete(0,tk.END)
+                pixel_inp.insert(0,cur_pixel_inp)
+            except:
+                pixel_inp.delete(0,tk.END)
+                pixel_inp.insert(0,"0.5")
+        clear_input_buffer()
+    except:
+        option_info.config(text="Pixel shift +0.5 error",fg="#AA0000")
 
 def key_press8(event):
-    if cur_input_mode.get()=="Pixel Perfect":
-        try:
-            cur_pixel_inp=float(pixel_inp.get())
-            cur_pixel_inp=max(0,round(cur_pixel_inp-0.5,1))
-            pixel_inp.delete(0,tk.END)
-            pixel_inp.insert(0,cur_pixel_inp)
-        except:
-            pixel_inp.delete(0,tk.END)
-            pixel_inp.insert(0,"0")
-    clear_input_buffer()
+    try:
+        if cur_input_mode.get()=="Pixel Perfect":
+            try:
+                cur_pixel_inp=float(pixel_inp.get())
+                cur_pixel_inp=max(0,round(cur_pixel_inp-0.5,1))
+                pixel_inp.delete(0,tk.END)
+                pixel_inp.insert(0,cur_pixel_inp)
+            except:
+                pixel_inp.delete(0,tk.END)
+                pixel_inp.insert(0,"0")
+        clear_input_buffer()
+    except:
+        option_info.config(text="Pixel shift -0.5 error",fg="#AA0000")
 
 def key_press9(event):
-    if cur_input_mode.get()=="Pixel Perfect":
-        try:
-            cur_pixel_inp=float(pixel_inp.get())
-            cur_pixel_inp=round(cur_pixel_inp+0.1,1)
-            pixel_inp.delete(0,tk.END)
-            pixel_inp.insert(0,cur_pixel_inp)
-        except:
-            pixel_inp.delete(0,tk.END)
-            pixel_inp.insert(0,"0.1")
-    clear_input_buffer()
+    try:
+        if cur_input_mode.get()=="Pixel Perfect":
+            try:
+                cur_pixel_inp=float(pixel_inp.get())
+                cur_pixel_inp=round(cur_pixel_inp+0.1,1)
+                pixel_inp.delete(0,tk.END)
+                pixel_inp.insert(0,cur_pixel_inp)
+            except:
+                pixel_inp.delete(0,tk.END)
+                pixel_inp.insert(0,"0.1")
+        clear_input_buffer()
+    except:
+        option_info.config(text="Pixel shift +0.1 error",fg="#AA0000")
 
 def key_press10(event):
-    if cur_input_mode.get()=="Pixel Perfect":
-        try:
-            cur_pixel_inp=float(pixel_inp.get())
-            cur_pixel_inp=max(0,round(cur_pixel_inp-0.1,1))
-            pixel_inp.delete(0,tk.END)
-            pixel_inp.insert(0,cur_pixel_inp)
-        except:
-            pixel_inp.delete(0,tk.END)
-            pixel_inp.insert(0,"0")
-    clear_input_buffer()
+    try:
+        if cur_input_mode.get()=="Pixel Perfect":
+            try:
+                cur_pixel_inp=float(pixel_inp.get())
+                cur_pixel_inp=max(0,round(cur_pixel_inp-0.1,1))
+                pixel_inp.delete(0,tk.END)
+                pixel_inp.insert(0,cur_pixel_inp)
+            except:
+                pixel_inp.delete(0,tk.END)
+                pixel_inp.insert(0,"0")
+        clear_input_buffer()
+    except:
+        option_info.config(text="Pixel shift -0.1 error",fg="#AA0000")
 
 # Dig spot
 def key_press11(event):
-    coords=READCOORD(sw,sh,debug,0)
-    if coords.valid:
-        x=coords.x
-        z=coords.z
-        cx=x//16
-        cz=z//16
-        
-        digcand=[]
-        for i in range(cx-1,cx+2):
-            for j in range(cz-1,cz+2):
-                candx=i*16+4
-                candz=j*16+4
-                digcand.append([(candx-x)**2+(candz-z)**2,candx,candz])
-        digcand=sorted(digcand)
-        
-        digx=digcand[0][1]
-        digz=digcand[0][2]
-        dx=digx-x
-        dz=digz-z
-        labels[8][0].config(text="({},{})".format(digx,digz))
-        
-        if dx>0:
-            sign1="+"
-        elif dx==0:
-            sign1="0"
-        else:
-            sign1="-"
-        if dz>0:
-            sign2="+"
-        elif dz==0:
-            sign2="0"
-        else:
-            sign2="-"
+    try:
+        coords=READCOORD(sw,sh,debug,0)
+        if coords.valid:
+            x=coords.x
+            z=coords.z
+            cx=x//16
+            cz=z//16
             
-        labels[8][1].config(text="( {} , {} )".format(sign1,sign2),fg="#000000")
-        labels[8][2].config(text="SH Dig",fg="#000000")
-
-        in_grid=0
-
-        if len(pt)==0:
-            chunk_dist=int((cx**2+cz**2)**0.5)
-            if chunk_dist>999:
-                prob_dig=0
-            elif game_version.get()=="1.4~1.10" or game_version.get()=="Pre 1.4":
-                if cx%40<=28 and cz%40<=28:
-                    prob_dig=vilprob16[chunk_dist]*29*29/0.267
-                    in_grid=1
-                else:
-                    prob_dig=0
-            elif game_version.get()=="1.11~1.18.20":
-                if cx%27<=17 and cz%17<=17:
-                    prob_dig=vilprob16[chunk_dist]*18*18/0.267
-                    in_grid=1
-                else:
-                    prob_dig=0
+            digcand=[]
+            for i in range(cx-1,cx+2):
+                for j in range(cz-1,cz+2):
+                    candx=i*16+4
+                    candz=j*16+4
+                    digcand.append([(candx-x)**2+(candz-z)**2,candx,candz])
+            digcand=sorted(digcand)
+            
+            digx=digcand[0][1]
+            digz=digcand[0][2]
+            dx=digx-x
+            dz=digz-z
+            labels[8][0].config(text="({},{})".format(digx,digz))
+            
+            if dx>0:
+                sign1="+"
+            elif dx==0:
+                sign1="0"
             else:
-                if cx%34<=27 and cz%34<=27:
-                    prob_dig=vilprob[chunk_dist]*28*28/0.267
-                    in_grid=1
-                else:
-                    prob_dig=0
-        else:
-            if game_version.get()=="1.4~1.10" or game_version.get()=="Pre 1.4":
-                if cx%40<=28 and cz%40<=28:
-                    prob_dig=IFVILPROB(digx//16,digz//16,2,res,lencand,info)
-                    in_grid=1
-                else:
-                    prob_dig=0
-            elif game_version.get()=="1.11~1.18.20":
-                if cx%27<=17 and cz%17<=17:
-                    prob_dig=IFVILPROB(digx//16,digz//16,1,res,lencand,info)
-                    in_grid=1
-                else:
-                    prob_dig=0
+                sign1="-"
+            if dz>0:
+                sign2="+"
+            elif dz==0:
+                sign2="0"
             else:
-                if cx%34<=27 and cz%34<=27:
-                    prob_dig=IFVILPROB(digx//16,digz//16,0,res,lencand,info)
-                    in_grid=1
-                else:
+                sign2="-"
+                
+            labels[8][1].config(text="( {} , {} )".format(sign1,sign2),fg="#000000")
+            labels[8][2].config(text="SH Dig",fg="#000000")
+
+            in_grid=0
+
+            if len(pt)==0:
+                chunk_dist=int((cx**2+cz**2)**0.5)
+                if chunk_dist>999:
                     prob_dig=0
-        col_code=[int(max_col[j]*(prob_dig)) for j in range(3)]
-        if in_grid:
-            labels[8][3].config(text=f'{prob_dig*100:.1f}'+"%",fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]))
-        else:
-            labels[8][3].config(text='')
-    clear_input_buffer()
+                elif game_version.get()=="1.4~1.10" or game_version.get()=="Pre 1.4":
+                    if cx%40<=28 and cz%40<=28:
+                        prob_dig=vilprob11[chunk_dist]*29*29/0.267
+                        in_grid=1
+                    else:
+                        prob_dig=0
+                elif game_version.get()=="1.11~1.18.20":
+                    if cx%27<=17 and cz%17<=17:
+                        prob_dig=vilprob16[chunk_dist]*18*18/0.267
+                        in_grid=1
+                    else:
+                        prob_dig=0
+                else:
+                    if cx%34<=27 and cz%34<=27:
+                        prob_dig=vilprob[chunk_dist]*28*28/0.267
+                        in_grid=1
+                    else:
+                        prob_dig=0
+            else:
+                if game_version.get()=="1.4~1.10" or game_version.get()=="Pre 1.4":
+                    if cx%40<=28 and cz%40<=28:
+                        prob_dig=IFVILPROB(digx//16,digz//16,2,res,lencand,info)
+                        in_grid=1
+                    else:
+                        prob_dig=0
+                elif game_version.get()=="1.11~1.18.20":
+                    if cx%27<=17 and cz%17<=17:
+                        prob_dig=IFVILPROB(digx//16,digz//16,1,res,lencand,info)
+                        in_grid=1
+                    else:
+                        prob_dig=0
+                else:
+                    if cx%34<=27 and cz%34<=27:
+                        prob_dig=IFVILPROB(digx//16,digz//16,0,res,lencand,info)
+                        in_grid=1
+                    else:
+                        prob_dig=0
+            col_code=[int(max_col[j]*(prob_dig)) for j in range(3)]
+            if in_grid:
+                labels[8][3].config(text=f'{prob_dig*100:.1f}'+"%",fg=rgb_to_hex(col_code[0],col_code[1],col_code[2]))
+            else:
+                labels[8][3].config(text='')
+        clear_input_buffer()
+    except:
+        option_info.config(text="Stronghold digspot error",fg="#AA0000")
 
 def key_press12(event):
-    coords=READCOORD(sw,sh,debug,0)
-    if coords.valid:
-        BTCALC(coords.x,coords.z,btres)
-        labels[8][0].config(text="({},{})".format(btres[0],btres[1]),fg="#000000")
-        labels[8][1].config(text="({},{})".format(btres[2],btres[3]),fg="#000000")
-        labels[8][2].config(text="({},{})".format(btres[4],btres[5]),fg="#000000")
-        labels[8][3].config(text="BT Dig",fg="#000000")
-    clear_input_buffer()
+    try:
+        coords=READCOORD(sw,sh,debug,0)
+        if coords.valid:
+            BTCALC(coords.x,coords.z,btres)
+            labels[8][0].config(text="({},{})".format(btres[0],btres[1]),fg="#000000")
+            labels[8][1].config(text="({},{})".format(btres[2],btres[3]),fg="#000000")
+            labels[8][2].config(text="({},{})".format(btres[4],btres[5]),fg="#000000")
+            labels[8][3].config(text="BT Dig",fg="#000000")
+        clear_input_buffer()
+    except:
+        option_info.config(text="Buried treasure dig spot error",fg="#AA0000")
 
 def key_press13(event):
-    display()
-    clear_input_buffer()
-    
+    try:
+        display()
+        clear_input_buffer()
+    except:
+        option_info.config(text="Hide dig spot error",fg="#AA0000")
+
 saved_coord=[0,0,0]
 def key_press14(event):
-    global saved_coord
-    coords=READCOORD(sw,sh,debug,1)
-    if coords.valid:
-        saved_coord=[coords.x,coords.y,coords.z]
-    labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]),fg="#000000")
-    labels[8][1].config(text="")
-    labels[8][2].config(text="Saved Coord",fg="#000000")
-    labels[8][3].config(text="")
-    clear_input_buffer()
+    try:
+        global saved_coord
+        coords=READCOORD(sw,sh,debug,1)
+        if coords.valid:
+            saved_coord=[coords.x,coords.y,coords.z]
+        labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]),fg="#000000")
+        labels[8][1].config(text="")
+        labels[8][2].config(text="Saved Coord",fg="#000000")
+        labels[8][3].config(text="")
+        clear_input_buffer()
+    except:
+        option_info.config(text="Save coordinate error",fg="#AA0000")
     
 def key_press15(event):
-    labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]),fg="#000000")
-    labels[8][1].config(text="")
-    labels[8][2].config(text="Saved Coord",fg="#000000")
-    labels[8][3].config(text="")
-    clear_input_buffer()
+    try:
+        labels[8][0].config(text="({},{},{})".format(saved_coord[0],saved_coord[1],saved_coord[2]),fg="#000000")
+        labels[8][1].config(text="")
+        labels[8][2].config(text="Saved Coord",fg="#000000")
+        labels[8][3].config(text="")
+        clear_input_buffer()
+    except:
+        option_info.config(text="Display saved digspot error",fg="#AA0000")
     
 def key_press16(event):
-    curinpind=input_mode_list.index(cur_input_mode.get())
-    curinpind=(curinpind+1)%4
-    cur_input_mode.set(input_mode_list[curinpind])
-    set_mode()
-    clear_input_buffer()
+    try:
+        curinpind=input_mode_list.index(cur_input_mode.get())
+        curinpind=(curinpind+1)%4
+        cur_input_mode.set(input_mode_list[curinpind])
+        set_mode()
+        clear_input_buffer()
+    except:
+        option_info.config(text="Change input mode error",fg="#AA0000")
 
 # Mouse tracking
 sum_move=ctypes.c_int(0)
@@ -1199,8 +1238,11 @@ def start_track():
         track_dis.config(text="Align and press F10")
         measuring=2
 def key_press4(event):
-    start_track()
-    clear_input_buffer()
+    try:
+        start_track()
+        clear_input_buffer()
+    except:
+        option_info.config(text="Start mouse tracking error",fg="#AA0000")
 
 def stop_track():
     global sum_move, default, calibrating, track_angle, measuring, track_move, sum_abs
@@ -1234,16 +1276,23 @@ def stop_track():
         measuring=0
         track_dis.config(text="Face pos X, Press F9")
 def key_press5(event):
-    stop_track()
-    clear_input_buffer()
+    try:
+        stop_track()
+        clear_input_buffer()
+    except:
+        option_info.config(text="End mouse tracking error",fg="#AA0000")
 
 # Iconify
 def key_press6(event):
-    if win.state()=="iconic":
-        win.state("normal")
-    else:
-        win.state("iconic")
-    set_infobar()
+    try:
+        if win.state()=="iconic":
+            win.state("normal")
+        else:
+            win.state("iconic")
+        set_infobar()
+        clear_input_buffer()
+    except:
+        option_info.config(text="Minimize window error",fg="#AA0000")
 
 # Keybind help
 hotkey_desc=["Paste coord 1","Paste coord 2","Add data","Start mouse tracking","End mouse tracking","Minimize window",
@@ -2060,9 +2109,10 @@ def display(prob_added=0):
         ## distance
         dist=((res[0].x*16+4-sx)**2+(res[0].z*16+4-sz)**2)**0.5
         option_text=option_text+", Dist: {}(maxprob)".format(round(dist))
+        option_text=option_text+", Angle: {}°".format(round((math.atan2(vecz,vecx)*180/math.pi)%360))
         
     ## next throw
-    if prob_added>0 and lencand>0 and cur_tsmethod.get()!="Hide" and False:
+    if prob_added>0 and lencand>0 and False and cur_tsmethod.get()!="Hide":
         if cur_tsmethod.get()=="Around stronghold":
             sx=round(info[1])
             sz=round(info[2])
