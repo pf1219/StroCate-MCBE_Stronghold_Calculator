@@ -60,7 +60,7 @@ if len(default)<16 and False:
     default.append(75)
     default.append(12)
     
-default_hotkey=["[","]","=","F9","F10","F4","s p","s m","p","m","d c","d v","d x","d n","d m","s i"]
+default_hotkey=["[","]","=","F9","F10","F4","s p","s m","p","m","d c","d v","d x","d n","d m","s i","d ;"]
 for i in range(len(default_hotkey)):
     if len(default)<(16+i):
         default.append(default_hotkey[i])
@@ -284,7 +284,7 @@ hotkeybar.add_cascade(label="Hotkeys",menu=hotkeylist)
 # About
 about.add_cascade(label="/StroCate: Bedrock Stronghold Calculator")
 about.add_cascade(label="Made by LHS1219")
-about.add_cascade(label="Version 2.11.2 (2026.07.24.)")
+about.add_cascade(label="Version 2.12.0 (2026.11.04.)")
 about.add_separator()
 def open_github():
     webbrowser.open("https://github.com/pf1219/StroCate-MCBE_Stronghold_Calculator")
@@ -590,6 +590,7 @@ cur_within=tk.IntVar()
 cur_within.set(int(default[9]))
 withinmenu=tk.Menu(settingbar,tearoff=False)
 settingbar.add_cascade(label="Search radius",menu=withinmenu)
+withinmenu.add_radiobutton(label="1200",value=1200,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="2000",value=2000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="3000",value=3000,variable=cur_within,command=set_version)
 withinmenu.add_radiobutton(label="4000",value=4000,variable=cur_within,command=set_version)
@@ -1222,6 +1223,37 @@ def key_press16(event):
     except:
         option_info.config(text="Change input mode error",fg="#AA0000")
 
+def key_press17(event):
+    global x1,x2,z1,z2
+    print("SET SPAWN POINT")
+    
+    if cur_cinp.get()=="Manual Input":
+        try:
+            x1=float(x1_inp.get())
+            z1=float(z1_inp.get())
+        except:
+            x1,z1=0,0
+    x1,z1=round(x1),round(z1)
+
+    if len(pt)==0:
+        pt.insert(0,[x1,z1])
+        pt_mode.insert(0,"spawn")
+        pt_err.insert(0,0)
+        pt_prec.insert(0,0)
+        pt_coord.insert(0,0)
+        pt_pixel.insert(0,0)
+        pt_pixel_err.insert(0,0)
+        pt_manual.insert(0,0)
+        listdata.insert(0,'spawn/{},{}'.format(x1,z1))
+    elif len(pt)==1 and pt_mode[0]=="spawn":
+        pt[0]=[x1,z1]
+        listdata[0]='spawn/{},{}'.format(x1,z1)
+
+    calculate_prior(x1,z1)
+    print("PRIOR")
+    set_infobar()
+    display(0)
+                
 # Mouse tracking
 sum_move=ctypes.c_int(0)
 sum_abs=ctypes.c_int(0)
@@ -1297,7 +1329,8 @@ def key_press6(event):
 # Keybind help
 hotkey_desc=["Paste coord 1","Paste coord 2","Add data","Start mouse tracking","End mouse tracking","Minimize window",
              "Pixel shift +0.5","Pixel shift -0.5","Pixel shift +0.1","Pixel shift -0.1","Stronghold dig spot",
-             "Buried treasure dig spot","Hide dig spot","Save coordinate","Display saved coordinate","Change input mode"]
+             "Buried treasure dig spot","Hide dig spot","Save coordinate","Display saved coordinate","Change input mode",
+             "Set spawn point"]
 def keybind_help():
     nhelp=hotkeylist.index("end")
     if isinstance(nhelp,int):
@@ -1884,8 +1917,14 @@ def calculate_prior(x1,z1):
 def add_prob(n,prior):
     start_time=time.time()
     global res, lencand, error_combine
+
     x1=pt[n][0]
     z1=pt[n][1]
+    if pt_mode[n]=="spawn":
+        calculate_prior(x1,z1)
+        print("PRIOR")
+        return(0)
+
     x2=pt[n][2]
     z2=pt[n][3]
 
@@ -1924,7 +1963,7 @@ def add_prob(n,prior):
             error_precision=1/dist*0.2339
             error_dist=0.3
         else:
-            if pt_manual[n]=="Show coordinate":
+            if pt_manual[n]=="Show coordinaset_infobar()te":
                 error_precision=1/dist*0.2339
                 error_dist=0.3
             elif pt_manual[n]=="Count minecraft pixel":
@@ -2089,6 +2128,7 @@ def display(prob_added=0):
             labels[i][3].config(text="")
 
     # info
+    option_text=""
     if prob_added>0 and lencand>0:
         ## village stronghold
         option_text="VilStr: {}%".format(round(info[0]*100))
@@ -2134,8 +2174,11 @@ def display(prob_added=0):
                     option_text=option_text+", Next: ({},{})({}C,≥{}%)".format(round(info[13]),round(info[14]),within,th1)
             else:
                 option_text=option_text+", Next: Target prob unreachable"
-            
-    option_info.config(text=option_text,fg="#888888")
+
+    if option_text=="":
+        set_infobar()
+    else:
+        option_info.config(text=option_text,fg="#888888")
     print(["DISPLAY TIME",time.time()-a])
         
 # Result
