@@ -16,6 +16,7 @@ int calculate_prior(int x1, int z1, int str_within, int prev_layout, int simul, 
     int cur_z=(z1<0) ? (z1-15)/16 : z1/16;
     int ncand=0;
     double sumprob=0;
+    int str_within_sq=str_within*str_within;
 
     for(int i=(cur_x-str_within) ; i<(cur_x+str_within) ; i++){
         int mi1=((i%200)+200)%200;
@@ -23,6 +24,9 @@ int calculate_prior(int x1, int z1, int str_within, int prev_layout, int simul, 
         int mi2_prev=((i%27)+27)%27;
         int mi2_new=((i%34)+34)%34;
         for(int j=(cur_z-str_within) ; j<(cur_z+str_within) ; j++){
+            int dist_sq=(i-cur_x)*(i-cur_x)+(j-cur_z)*(j-cur_z);
+            if(dist_sq>str_within_sq){continue;}
+            
             double cur_prob_vil=0;
             double cur_prob_sca=0;
             int mj1=((j%200)+200)%200;
@@ -50,7 +54,7 @@ int calculate_prior(int x1, int z1, int str_within, int prev_layout, int simul, 
             }
             double cur_prob=cur_prob_vil+cur_prob_sca;
             if(cur_prob>0){
-                int dist_int=round(sqrt((i-cur_x)*(i-cur_x)+(j-cur_z)*(j-cur_z)));
+                int dist_int=round(sqrt(dist_sq));
                 double dist_coef=0.0001;
                 if(dist_int<ndistprob){dist_coef=distprob[dist_int];}
                 res[ncand].prob=cur_prob*dist_coef;
