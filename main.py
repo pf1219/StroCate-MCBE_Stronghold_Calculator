@@ -1225,34 +1225,38 @@ def key_press16(event):
 
 def key_press17(event):
     global x1,x2,z1,z2
-    print("SET SPAWN POINT")
-    
-    if cur_cinp.get()=="Manual Input":
-        try:
-            x1=float(x1_inp.get())
-            z1=float(z1_inp.get())
-        except:
-            x1,z1=0,0
-    x1,z1=round(x1),round(z1)
+    try:
+        start_time=time.time()
+        print("SET SPAWN POINT")
+        
+        if cur_cinp.get()=="Manual Input":
+            try:
+                x1=float(x1_inp.get())
+                z1=float(z1_inp.get())
+            except:
+                x1,z1=0,0
+        x1,z1=round(x1),round(z1)
 
-    if len(pt)==0:
-        pt.insert(0,[x1,z1])
-        pt_mode.insert(0,"spawn")
-        pt_err.insert(0,0)
-        pt_prec.insert(0,0)
-        pt_coord.insert(0,0)
-        pt_pixel.insert(0,0)
-        pt_pixel_err.insert(0,0)
-        pt_manual.insert(0,0)
-        listdata.insert(0,'spawn/{},{}'.format(x1,z1))
-    elif len(pt)==1 and pt_mode[0]=="spawn":
-        pt[0]=[x1,z1]
-        listdata[0]='spawn/{},{}'.format(x1,z1)
+        if len(pt)==0:
+            pt.insert(0,[x1,z1])
+            pt_mode.insert(0,"spawn")
+            pt_err.insert(0,0)
+            pt_prec.insert(0,0)
+            pt_coord.insert(0,0)
+            pt_pixel.insert(0,0)
+            pt_pixel_err.insert(0,0)
+            pt_manual.insert(0,0)
+            listdata.insert(0,'spawn/{},{}'.format(x1,z1))
 
-    calculate_prior(x1,z1)
-    print("PRIOR")
-    set_infobar()
-    display(0)
+        calculate_prior(x1,z1)
+        print("PRIOR")
+        end_time=time.time()
+        print(["CALCULATION TIME",end_time-start_time])
+        print(["info",lencand]+info[:4])
+        set_infobar()
+        display(0)
+    except:
+        option_info.config(text="Set spawn point error",fg="#AA0000")
                 
 # Mouse tracking
 sum_move=ctypes.c_int(0)
